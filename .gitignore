@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.output/
+
+# SvelteKit
+.svelte-kit/
+app/.svelte-kit/
+app/build/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.test
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vercel
+.vercel/
+
+# Debug
+debug-log.md
+.ai/debug-log.md
