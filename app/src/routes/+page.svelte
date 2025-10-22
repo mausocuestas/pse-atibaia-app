@@ -1,17 +1,35 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+  import { Button } from "$lib/components/ui/button";
+  import { signIn } from "@auth/sveltekit/client";
+  import type { PageData } from "./$types";
+
+  export let data: PageData;
+
+  let isLoading = false;
+
+  async function handleSignIn() {
+    isLoading = true;
+    try {
+      await signIn("google", { callbackUrl: "/dashboard" });
+    } catch (error) {
+      console.error("Sign in error:", error);
+      isLoading = false;
+    }
+  }
 </script>
 
-<div class="flex flex-col items-center justify-center min-h-screen bg-slate-100 gap-4">
-	<h1 class="text-4xl font-bold text-blue-600 mb-4">Welcome to SvelteKit</h1>
-	<p class="text-lg text-gray-700">
-		Visit <a href="https://svelte.dev/docs/kit" class="text-blue-500 hover:underline">svelte.dev/docs/kit</a> to read the documentation
-	</p>
+<div class="flex justify-center items-center h-screen">
+  <div class="text-center">
+    <h1 class="text-2xl font-bold mb-4">Projeto PSE Atibaia</h1>
+    <p class="text-muted-foreground mb-6">Sistema de Avaliação de Unidades de Saúde</p>
 
-	<div class="flex gap-2 mt-4">
-		<Button>Default Button</Button>
-		<Button variant="secondary">Secondary</Button>
-		<Button variant="destructive">Destructive</Button>
-		<Button variant="outline">Outline</Button>
-	</div>
+    {#if data.session}
+      <p class="mb-4">Bem-vindo, {data.session.user?.name}!</p>
+      <Button href="/dashboard">Ir para Dashboard</Button>
+    {:else}
+      <Button onclick={handleSignIn} disabled={isLoading}>
+        {isLoading ? "Carregando..." : "Login com Google"}
+      </Button>
+    {/if}
+  </div>
 </div>
