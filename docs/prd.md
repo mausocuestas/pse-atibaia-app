@@ -93,13 +93,25 @@
     5.  Se não autorizado, uma mensagem de "Acesso Negado" é exibida.
     6.  Um botão de "Logout" está disponível para encerrar a sessão.
 
-### Estória 1.4: Layout Básico e Rotas Protegidas
-*   **Como um** usuário logado, **eu quero** ver um layout de aplicação consistente e ser impedido de acessar páginas protegidas quando não estou logado, **para que** a navegação seja segura e estruturada.
+### Estória 1.4: Refatorar a Página de Login com Componente Shadcn
+*   **Como um** usuário, **eu quero** ter uma página de login moderna e profissional usando componentes Shadcn, **para que** a interface seja consistente com o design system da aplicação.
 *   **Critérios de Aceitação (AC):**
-    1.  Um layout básico é criado, contendo um cabeçalho e uma área de conteúdo principal.
-    2.  O cabeçalho exibe o nome do usuário logado e o botão de "Logout".
-    3.  A rota do dashboard (`/dashboard`) é protegida. Tentativas de acesso direto sem login redirecionam para a página inicial.
-    4.  Após o login, o usuário é direcionado para a página do dashboard (que pode, por enquanto, exibir apenas uma mensagem de boas-vindas).
+    1.  A página de login é refatorada para usar o componente Card do Shadcn-svelte.
+    2.  O layout segue princípios de design modernos com boa hierarquia visual.
+    3.  O botão "Login com Google" utiliza o componente Button do Shadcn.
+    4.  A página é responsiva e funciona bem em dispositivos móveis e desktop.
+    5.  Elementos visuais incluem o logo/título da aplicação e texto descritivo apropriado.
+
+### Estória 1.5: Implementar Layout Global com Sidebar
+*   **Como um** usuário logado, **eu quero** ver um layout de aplicação consistente com sidebar de navegação e ser impedido de acessar páginas protegidas quando não estou logado, **para que** a navegação seja segura, intuitiva e estruturada.
+*   **Critérios de Aceitação (AC):**
+    1.  Um layout global é criado usando o componente Sidebar do Shadcn-svelte.
+    2.  A sidebar exibe o nome do usuário logado e opções de navegação apropriadas.
+    3.  O layout inclui header, sidebar e área de conteúdo principal.
+    4.  Um botão de "Logout" está disponível e funcional.
+    5.  As rotas protegidas (`/dashboard`, etc.) redirecionam para a página de login se o usuário não estiver autenticado.
+    6.  Após o login, o usuário é direcionado para a página do dashboard.
+    7.  A sidebar é responsiva e adaptável para dispositivos móveis (collapsible/drawer).
 
 ## 7. Epic 2: O Fluxo de Coleta de Dados
 **Objetivo do Épico:** Implementar o fluxo completo de avaliação para o profissional de saúde, desde o dashboard pessoal até o registro de todas as avaliações com persistência local.
