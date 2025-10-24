@@ -47,7 +47,7 @@
           <div class="rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-950">
             <div class="flex items-start gap-3">
               <svg
-                class="mt-0.5 h-5 w-5 flex-shrink-0 text-sky-700 dark:text-sky-400"
+                class="mt-0.5 h-5 w-5 shrink-0 text-sky-700 dark:text-sky-400"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
@@ -131,7 +131,7 @@
       </div>
       <div class="relative hidden bg-muted md:block">
         <img
-          src="/imagem-login.png"
+          src="/imagem-login.svg"
           alt="PSE Atibaia - Saúde na Escola"
           class="absolute inset-0 h-full w-full object-cover dark:brightness-[0.8]"
         />
