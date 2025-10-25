@@ -156,3 +156,73 @@ xl:  1280px  /* Desktops */
 - Minimizar re-renders desnecessários
 - Usar Svelte stores para estado compartilhado
 - Code splitting por rota para otimizar bundle size
+
+## 6.4 Padrão de Colaboração para Componentes Compostos
+
+Para componentes compostos que envolvem múltiplos arquivos e estruturas complexas, o padrão preferido de comunicação entre desenvolvedores e agentes de IA é composto por **três elementos essenciais**:
+
+### Elementos da Colaboração Ideal
+
+1. **Imagem de Referência** - Mostra o resultado visual esperado
+2. **Código dos Componentes Principais** - Os 2-3 arquivos chave (não toda a biblioteca)
+3. **Instruções Específicas** - O que adaptar/mudar do exemplo para o contexto específico
+
+### Exemplo Perfeito de Solicitação
+
+```markdown
+Preciso de um site-header.svelte, adaptado de: [código fornecido]
+
+Há uma imagem de referência em app/static/app-sidebar.png
+
+Troque X por Y, adicione Z, adapte para o contexto do PSE Atibaia
+```
+
+### Comparação de Abordagens
+
+#### ⭐⭐⭐⭐⭐ Opção 1: Códigos de Exemplo + Imagem (MELHOR)
+
+**Vantagens:**
+- ✅ Mais efetivo - Agente vê exatamente o resultado esperado
+- ✅ Contexto claro - A imagem mostra a UI final desejada
+- ✅ Código referência - Mostra os padrões/estrutura a seguir
+- ✅ Adaptável - Permite adaptação do código exemplo para necessidades específicas
+- ✅ Menos confusão - Não há necessidade de adivinhar quais arquivos são relevantes
+- ✅ Eficiente em tokens - Apenas os arquivos necessários são processados
+
+**Exemplo Real de Sucesso:**
+- Fornecidos: `nav-secondary.svelte`, `site-header.svelte`, `nav-main.svelte`, `search-form.svelte`
+- Mostrada: Imagem de referência `app-sidebar.png`
+- Resultado: Implementação precisa adaptada para o contexto do PSE Atibaia
+
+#### ⭐⭐⭐ Opção 2: Baixar Tudo numa Pasta
+
+**Vantagens:**
+- ✅ Rápido para preparar
+- ✅ Acesso a todos os arquivos
+
+**Desvantagens:**
+- ❌ Requer exploração/leitura de muitos arquivos para entender o que é relevante
+- ❌ Pode conter código desnecessário ou de exemplo não relacionado
+- ❌ Menos direcionado - não é claro exatamente o que deve ser usado
+- ❌ Gasto excessivo de tokens lendo arquivos irrelevantes
+
+### Dicas para Máxima Eficiência
+
+#### ✅ Faça:
+
+- Mostre a imagem de referência do resultado esperado
+- Cole o código dos componentes principais (2-5 arquivos máximo)
+- Especifique as adaptações necessárias
+- Mencione o contexto do projeto ("para PSE Atibaia", "segue padrão X")
+- Destaque o que deve ser diferente do exemplo fornecido
+
+#### ❌ Evite:
+
+- Colar 20+ arquivos sem contexto ou direcionamento
+- Mostrar apenas a imagem sem código de referência
+- Não especificar o que deve ser diferente do exemplo
+- Fornecer bibliotecas inteiras quando apenas alguns componentes são necessários
+
+### Resumo
+
+**A abordagem "Código exemplo + Imagem + Instruções claras" é o padrão preferido para componentes compostos.** Este padrão resulta em implementação rápida, precisa e eficiente em termos de recursos computacionais.

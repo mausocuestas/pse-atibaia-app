@@ -1,43 +1,44 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import SchoolCard from '$lib/components/app/dashboard/SchoolCard.svelte';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let { data }: { data: PageData } = $props();
 
 	const user = data.session?.user as any;
+	const schools = data.schools || [];
 </script>
 
-<div class="flex flex-1 flex-col gap-4 p-4">
-	<div class="bg-white rounded-lg shadow p-6">
-		<h2 class="text-xl font-semibold text-gray-900 mb-4">Bem-vindo!</h2>
+<div class="flex flex-1 flex-col gap-6 p-4 md:p-6">
+	<!-- Header Section -->
+	<div>
+		<h1 class="text-2xl font-bold text-gray-900 mb-1">
+			Olá, {user?.apelido || user?.name || 'Avaliador'}!
+		</h1>
+		<p class="text-gray-600">Bem-vindo ao seu painel de avaliações.</p>
+	</div>
 
-		<div class="space-y-2">
-			<p class="text-gray-700">
-				<span class="font-medium">Nome:</span>
-				{user?.nome_profissional || user?.name || 'N/A'}
-			</p>
-			<p class="text-gray-700">
-				<span class="font-medium">Email:</span>
-				{user?.email || 'N/A'}
-			</p>
-			<p class="text-gray-700">
-				<span class="font-medium">ID Profissional:</span>
-				{user?.profissional_id || 'N/A'}
-			</p>
-			<p class="text-gray-700">
-				<span class="font-medium">ID Avaliador:</span>
-				{user?.avaliador_id || 'N/A'}
-			</p>
-			<p class="text-gray-700">
-				<span class="font-medium">ID USF:</span>
-				{user?.usf_id || 'N/A'}
-			</p>
-		</div>
+	<!-- Schools Section -->
+	<div class="space-y-4">
+		<h2 class="text-xl font-semibold text-gray-900">Minhas Escolas</h2>
 
-		<div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-			<p class="text-sm text-blue-800">
-				Este é um dashboard temporário. Funcionalidades adicionais serão implementadas em
-				histórias futuras.
-			</p>
-		</div>
+		{#if schools.length === 0}
+			<div class="text-center py-12 bg-white rounded-lg shadow">
+				<p class="text-gray-500">Nenhuma escola associada à sua USF.</p>
+			</div>
+		{:else}
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+				{#each schools as school (school.inep)}
+					<SchoolCard {school} />
+				{/each}
+			</div>
+		{/if}
+	</div>
+
+	<!-- Access All Schools Button -->
+	<div class="flex justify-center">
+		<Button variant="outline" href="/escolas" class="w-full md:w-auto">
+			Acessar todas as escolas
+		</Button>
 	</div>
 </div>
