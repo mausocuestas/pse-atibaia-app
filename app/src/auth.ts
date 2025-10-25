@@ -2,9 +2,9 @@ import { SvelteKitAuth } from '@auth/sveltekit';
 import Google from '@auth/sveltekit/providers/google';
 import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } from '$env/static/private';
 import { getAuthorizedUser } from '$lib/server/db/queries/auth';
-import type { Profile } from '@auth/core/types';
 
 export const { handle, signIn, signOut } = SvelteKitAuth({
+	trustHost: true,
 	providers: [
 		Google({
 			clientId: GOOGLE_CLIENT_ID,
@@ -12,7 +12,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 		})
 	],
 	callbacks: {
-		async signIn({ user, account, profile }) {
+		async signIn({ user }) {
 			// Verify user is authorized using our database
 			if (!user.email) {
 				return false;
@@ -27,7 +27,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 
 			return true;
 		},
-		async jwt({ token, user, account, profile }) {
+		async jwt({ token, user, account }) {
 			// Add custom user data to JWT token after initial sign in
 			if (account && user?.email) {
 				const authorizedUser = await getAuthorizedUser(user.email);
