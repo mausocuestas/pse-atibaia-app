@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { formatPeriod, formatDateOfBirthWithAge } from '$lib/utils/periods';
 
 	let { data }: { data: PageData } = $props();
 
@@ -24,7 +25,7 @@
 			</Breadcrumb.Item>
 			<Breadcrumb.Separator />
 			<Breadcrumb.Item>
-				<Breadcrumb.Link href="/escolas/{escola?.inep}/{encodeURIComponent(periodo || '')}">{periodo || 'Período'}</Breadcrumb.Link>
+				<Breadcrumb.Link href="/escolas/{escola?.inep}/{encodeURIComponent(periodo || '')}">{periodo ? formatPeriod(periodo) : 'Período'}</Breadcrumb.Link>
 			</Breadcrumb.Item>
 			<Breadcrumb.Separator />
 			<Breadcrumb.Item>
@@ -39,7 +40,7 @@
 			Turma {turma || ''}
 		</h1>
 		<p class="text-gray-600">
-			{escola?.escola || 'Escola'} - {periodo || 'Período'}
+			{escola?.escola || 'Escola'} - {periodo ? formatPeriod(periodo) : 'Período'}
 		</p>
 	</div>
 
@@ -56,29 +57,14 @@
 		{:else}
 			<div class="flex flex-col gap-2">
 				{#each students as student (student.aluno_id)}
-					<div
-						role="button"
-						tabindex="0"
-						onclick={() => {
-							// Placeholder for future Story 2.3
-							alert('Avaliação do aluno será implementada na Story 2.3');
-						}}
-						onkeydown={(e) => {
-							if (e.key === 'Enter' || e.key === ' ') {
-								e.preventDefault();
-								alert('Avaliação do aluno será implementada na Story 2.3');
-							}
-						}}
-						class="p-4 border rounded-lg hover:bg-gray-50 transition-colors bg-white cursor-pointer"
+					<a
+						href="/avaliar/{student.aluno_id}"
+						class="p-4 border rounded-lg hover:bg-gray-50 transition-colors bg-white block"
 					>
 						<div class="flex flex-col gap-2">
 							<div class="font-medium text-gray-900">{student.nome}</div>
 							<div class="text-sm text-gray-600">
-								{#if student.idade !== null}
-									Idade: {student.idade} {student.idade === 1 ? 'ano' : 'anos'}
-								{:else}
-									Idade não informada
-								{/if}
+								{formatDateOfBirthWithAge(student.data_nasc, student.idade)}
 							</div>
 							{#if student.has_visual_eval || student.has_anthropometric_eval || student.has_dental_eval}
 								<div class="flex flex-wrap gap-2 mt-1">
@@ -94,7 +80,7 @@
 								</div>
 							{/if}
 						</div>
-					</div>
+					</a>
 				{/each}
 			</div>
 		{/if}

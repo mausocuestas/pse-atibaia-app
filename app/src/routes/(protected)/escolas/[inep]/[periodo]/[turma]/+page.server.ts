@@ -8,8 +8,9 @@ const CURRENT_YEAR = 2025;
 
 /**
  * Validation schema for periodo parameter
+ * Values stored in DB without accents: MANHA, TARDE, INTEGRAL, NOITE
  */
-const periodoSchema = z.enum(['MANHÃ', 'TARDE', 'INTEGRAL', 'NOITE']);
+const periodoSchema = z.enum(['MANHA', 'TARDE', 'INTEGRAL', 'NOITE']);
 
 /**
  * School basic information
@@ -23,7 +24,8 @@ interface SchoolInfo {
 
 export const load: PageServerLoad = async ({ params }) => {
 	const escola_id = Number(params.inep);
-	const periodo = params.periodo;
+	// Normalize periodo to uppercase to match database values (MANHÃ, TARDE, etc.)
+	const periodo = params.periodo.toUpperCase();
 	const turma = params.turma;
 
 	// Validate escola_id

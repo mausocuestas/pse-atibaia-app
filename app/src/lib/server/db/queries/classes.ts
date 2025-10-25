@@ -6,6 +6,8 @@ import { z } from 'zod';
  */
 export interface PeriodData {
 	periodo: string;
+	total_alunos: number;
+	alunos_avaliados: number;
 }
 
 /**
@@ -14,6 +16,7 @@ export interface PeriodData {
 export interface ClassData {
 	turma: string;
 	total_alunos: number;
+	alunos_avaliados: number;
 }
 
 /**
@@ -39,8 +42,9 @@ const schoolYearSchema = z.object({
 
 /**
  * Validation schema for periodo parameter
+ * Values stored in DB without accents: MANHA, TARDE, INTEGRAL, NOITE
  */
-const periodoSchema = z.enum(['MANHÃ', 'TARDE', 'INTEGRAL', 'NOITE']);
+const periodoSchema = z.enum(['MANHA', 'TARDE', 'INTEGRAL', 'NOITE']);
 
 /**
  * Validation schema for school, period and year
@@ -75,13 +79,26 @@ export async function getPeriodsBySchool(
 			return [];
 		}
 
-		// Query distinct periods for the school and year
+		// Query periods with student counts and evaluation progress
 		const result = await sql<PeriodData[]>`
-			SELECT DISTINCT periodo
-			FROM pse.matriculas
-			WHERE escola_id = ${escola_id}
-			AND ano_letivo = ${ano_letivo}
-			ORDER BY periodo
+			SELECT
+				m.periodo,
+				COUNT(DISTINCT m.aluno_id) as total_alunos,
+				COUNT(DISTINCT CASE
+					WHEN (av.id IS NOT NULL OR aa.id IS NOT NULL OR ao.id IS NOT NULL)
+					THEN m.aluno_id
+				END) as alunos_avaliados
+			FROM pse.matriculas m
+			LEFT JOIN pse.avaliacoes_acuidade_visual av
+				ON m.aluno_id = av.aluno_id AND av.ano_referencia = ${ano_letivo}
+			LEFT JOIN pse.avaliacoes_antropometricas aa
+				ON m.aluno_id = aa.aluno_id AND aa.ano_referencia = ${ano_letivo}
+			LEFT JOIN pse.avaliacoes_odontologicas ao
+				ON m.aluno_id = ao.aluno_id AND ao.ano_referencia = ${ano_letivo}
+			WHERE m.escola_id = ${escola_id}
+			AND m.ano_letivo = ${ano_letivo}
+			GROUP BY m.periodo
+			ORDER BY m.periodo
 		`;
 
 		return result;
@@ -112,17 +129,27 @@ export async function getClassesBySchoolAndPeriod(
 			return [];
 		}
 
-		// Query distinct classes with student counts
+		// Query distinct classes with student counts and evaluation progress
 		const result = await sql<ClassData[]>`
 			SELECT
-				turma,
-				COUNT(DISTINCT aluno_id)::int AS total_alunos
-			FROM pse.matriculas
-			WHERE escola_id = ${escola_id}
-			AND periodo = ${periodo}
-			AND ano_letivo = ${ano_letivo}
-			GROUP BY turma
-			ORDER BY turma
+				m.turma,
+				COUNT(DISTINCT m.aluno_id)::int AS total_alunos,
+				COUNT(DISTINCT CASE
+					WHEN (av.id IS NOT NULL OR aa.id IS NOT NULL OR ao.id IS NOT NULL)
+					THEN m.aluno_id
+				END)::int as alunos_avaliados
+			FROM pse.matriculas m
+			LEFT JOIN pse.avaliacoes_acuidade_visual av
+				ON m.aluno_id = av.aluno_id AND av.ano_referencia = ${ano_letivo}
+			LEFT JOIN pse.avaliacoes_antropometricas aa
+				ON m.aluno_id = aa.aluno_id AND aa.ano_referencia = ${ano_letivo}
+			LEFT JOIN pse.avaliacoes_odontologicas ao
+				ON m.aluno_id = ao.aluno_id AND ao.ano_referencia = ${ano_letivo}
+			WHERE m.escola_id = ${escola_id}
+			AND m.periodo = ${periodo}
+			AND m.ano_letivo = ${ano_letivo}
+			GROUP BY m.turma
+			ORDER BY m.turma
 		`;
 
 		return result;

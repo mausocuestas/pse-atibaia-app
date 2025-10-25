@@ -46,20 +46,17 @@ export async function getSchoolsByUsf(usf_id: number): Promise<SchoolData[]> {
 				e.tipo,
 				COALESCE(COUNT(DISTINCT m.aluno_id), 0)::int AS total_alunos,
 				COALESCE(COUNT(DISTINCT CASE
-					WHEN (av.aluno_id IS NOT NULL OR aa.aluno_id IS NOT NULL OR ao.aluno_id IS NOT NULL)
+					WHEN (av.id IS NOT NULL OR aa.id IS NOT NULL OR ao.id IS NOT NULL)
 					THEN m.aluno_id
 				END), 0)::int AS alunos_avaliados
 			FROM shared.escolas e
 			INNER JOIN pse.usf_escolas ue ON e.inep = ue.escola_id
 			LEFT JOIN pse.matriculas m ON e.inep = m.escola_id AND m.ano_letivo = ${currentYear}
 			LEFT JOIN pse.avaliacoes_acuidade_visual av ON m.aluno_id = av.aluno_id
-				AND av.escola_id = e.inep
 				AND av.ano_referencia = ${currentYear}
 			LEFT JOIN pse.avaliacoes_antropometricas aa ON m.aluno_id = aa.aluno_id
-				AND aa.escola_id = e.inep
 				AND aa.ano_referencia = ${currentYear}
 			LEFT JOIN pse.avaliacoes_odontologicas ao ON m.aluno_id = ao.aluno_id
-				AND ao.escola_id = e.inep
 				AND ao.ano_referencia = ${currentYear}
 			WHERE ue.usf_id = ${usf_id}
 			AND ue.is_ativo = true

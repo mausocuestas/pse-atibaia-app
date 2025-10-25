@@ -2,6 +2,8 @@
 	import type { PageData } from './$types';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
+	import { Progress } from '$lib/components/ui/progress/index.js';
+	import { formatPeriod } from '$lib/utils/periods';
 
 	let { data }: { data: PageData } = $props();
 
@@ -23,7 +25,7 @@
 			</Breadcrumb.Item>
 			<Breadcrumb.Separator />
 			<Breadcrumb.Item>
-				<Breadcrumb.Page>{periodo || 'Período'}</Breadcrumb.Page>
+				<Breadcrumb.Page>{periodo ? formatPeriod(periodo) : 'Período'}</Breadcrumb.Page>
 			</Breadcrumb.Item>
 		</Breadcrumb.List>
 	</Breadcrumb.Root>
@@ -31,9 +33,9 @@
 	<!-- Period Header -->
 	<div>
 		<h1 class="text-2xl font-bold text-gray-900 mb-1">
-			{escola?.escola || 'Escola'} - {periodo || 'Período'}
+			{escola?.escola || 'Escola'} - {periodo ? formatPeriod(periodo) : 'Período'}
 		</h1>
-		<p class="text-gray-600">Turmas do período {periodo}</p>
+		<p class="text-gray-600">Turmas do período {periodo ? formatPeriod(periodo) : ''}</p>
 	</div>
 
 	<!-- Classes Section -->
@@ -47,14 +49,26 @@
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				{#each classes as turma (turma.turma)}
+					{@const percentage = turma.total_alunos > 0
+						? Math.round((turma.alunos_avaliados / turma.total_alunos) * 100)
+						: 0}
 					<a href="/escolas/{escola?.inep}/{encodeURIComponent(periodo || '')}/{encodeURIComponent(turma.turma)}">
 						<Card.Root class="hover:shadow-lg transition-shadow cursor-pointer h-full">
-							<Card.Header>
-								<Card.Title class="text-lg">{turma.turma}</Card.Title>
-								<Card.Description>
-									{turma.total_alunos} {turma.total_alunos === 1 ? 'aluno' : 'alunos'}
-								</Card.Description>
+							<Card.Header class="pb-3">
+								<div class="flex items-center justify-between">
+									<Card.Title class="text-lg">{turma.turma}</Card.Title>
+									<span class="text-sm text-gray-600">
+										{turma.total_alunos} {turma.total_alunos === 1 ? 'aluno' : 'alunos'}
+									</span>
+								</div>
 							</Card.Header>
+							<Card.Content class="space-y-1 pt-0">
+								<div class="flex items-center justify-between text-xs">
+									<span class="text-gray-600">{turma.alunos_avaliados} alunos avaliados</span>
+									<span class="font-medium text-gray-700">{percentage}%</span>
+								</div>
+								<Progress value={percentage} class="h-2" />
+							</Card.Content>
 						</Card.Root>
 					</a>
 				{/each}

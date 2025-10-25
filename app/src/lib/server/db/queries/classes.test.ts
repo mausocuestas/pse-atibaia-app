@@ -15,9 +15,9 @@ describe('getPeriodsBySchool', () => {
 	it('should return distinct periods for a school', async () => {
 		const { sql } = await import('$lib/server/db');
 		const mockResult: PeriodData[] = [
-			{ periodo: 'INTEGRAL' },
-			{ periodo: 'MANHÃ' },
-			{ periodo: 'TARDE' }
+			{ periodo: 'INTEGRAL', total_alunos: 50, alunos_avaliados: 10 },
+			{ periodo: 'MANHA', total_alunos: 75, alunos_avaliados: 25 },
+			{ periodo: 'TARDE', total_alunos: 60, alunos_avaliados: 15 }
 		];
 
 		(sql as any).mockResolvedValue(mockResult);
@@ -29,7 +29,7 @@ describe('getPeriodsBySchool', () => {
 		expect(sql).toHaveBeenCalled();
 		const callArgs = (sql as any).mock.calls[0];
 		expect(callArgs[0].join('')).toContain('pse.matriculas');
-		expect(callArgs[0].join('')).toContain('DISTINCT periodo');
+		expect(callArgs[0].join('')).toContain('COUNT(DISTINCT');
 	});
 
 	it('should return empty array when school has no periods', async () => {
@@ -91,22 +91,23 @@ describe('getClassesBySchoolAndPeriod', () => {
 	it('should return classes with student counts', async () => {
 		const { sql } = await import('$lib/server/db');
 		const mockResult: ClassData[] = [
-			{ turma: '1A', total_alunos: 25 },
-			{ turma: '1B', total_alunos: 28 },
-			{ turma: '2A', total_alunos: 22 }
+			{ turma: '1A', total_alunos: 25, alunos_avaliados: 5 },
+			{ turma: '1B', total_alunos: 28, alunos_avaliados: 10 },
+			{ turma: '2A', total_alunos: 22, alunos_avaliados: 8 }
 		];
 
 		(sql as any).mockResolvedValue(mockResult);
 
-		const result = await getClassesBySchoolAndPeriod(12345678, 'MANHÃ', 2025);
+		const result = await getClassesBySchoolAndPeriod(12345678, 'MANHA', 2025);
 
 		expect(result).toEqual(mockResult);
 		expect(result).toHaveLength(3);
 		expect(result[0].total_alunos).toBe(25);
+		expect(result[0].alunos_avaliados).toBe(5);
 		expect(sql).toHaveBeenCalled();
 		const callArgs = (sql as any).mock.calls[0];
-		expect(callArgs[0].join('')).toContain('COUNT(DISTINCT aluno_id)');
-		expect(callArgs[0].join('')).toContain('GROUP BY turma');
+		expect(callArgs[0].join('')).toContain('COUNT(DISTINCT');
+		expect(callArgs[0].join('')).toContain('GROUP BY');
 	});
 
 	it('should return empty array when no classes found', async () => {
@@ -190,7 +191,7 @@ describe('getStudentsByClass', () => {
 
 		(sql as any).mockResolvedValue(mockResult);
 
-		const result = await getStudentsByClass(12345678, 'MANHÃ', '1A', 2025);
+		const result = await getStudentsByClass(12345678, 'MANHA', '1A', 2025);
 
 		expect(result).toEqual(mockResult);
 		expect(result).toHaveLength(2);
@@ -257,7 +258,7 @@ describe('getStudentsByClass', () => {
 
 		(sql as any).mockResolvedValue(mockResult);
 
-		const result = await getStudentsByClass(12345678, 'MANHÃ', '1A', 2025);
+		const result = await getStudentsByClass(12345678, 'MANHA', '1A', 2025);
 
 		expect(result).toEqual(mockResult);
 		expect(result[0].data_nasc).toBeNull();
@@ -302,7 +303,7 @@ describe('getStudentsByClass', () => {
 
 		(sql as any).mockResolvedValue(mockResult);
 
-		const result = await getStudentsByClass(12345678, 'MANHÃ', '1A', 2025);
+		const result = await getStudentsByClass(12345678, 'MANHA', '1A', 2025);
 
 		expect(result).toEqual(mockResult);
 		const callArgs = (sql as any).mock.calls[0];
@@ -315,7 +316,7 @@ describe('getStudentsByClass', () => {
 
 		(sql as any).mockRejectedValue(new Error('Database error'));
 
-		const result = await getStudentsByClass(12345678, 'MANHÃ', '1A', 2025);
+		const result = await getStudentsByClass(12345678, 'MANHA', '1A', 2025);
 
 		expect(result).toEqual([]);
 		expect(consoleErrorSpy).toHaveBeenCalled();

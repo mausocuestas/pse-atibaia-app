@@ -2,6 +2,8 @@
 	import type { PageData } from './$types';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
+	import { Progress } from '$lib/components/ui/progress/index.js';
+	import { formatPeriod } from '$lib/utils/periods';
 
 	let { data }: { data: PageData } = $props();
 
@@ -48,11 +50,26 @@
 		{:else}
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				{#each periods as period (period.periodo)}
+					{@const percentage = period.total_alunos > 0
+						? Math.round((period.alunos_avaliados / period.total_alunos) * 100)
+						: 0}
 					<a href="/escolas/{escola?.inep}/{encodeURIComponent(period.periodo)}">
 						<Card.Root class="hover:shadow-lg transition-shadow cursor-pointer h-full">
-							<Card.Header>
-								<Card.Title class="text-lg">{period.periodo}</Card.Title>
+							<Card.Header class="pb-3">
+								<div class="flex items-center justify-between">
+									<Card.Title class="text-lg">{formatPeriod(period.periodo)}</Card.Title>
+									<span class="text-sm text-gray-600">
+										{period.total_alunos} aluno{period.total_alunos !== 1 ? 's' : ''}
+									</span>
+								</div>
 							</Card.Header>
+							<Card.Content class="space-y-1 pt-0">
+								<div class="flex items-center justify-between text-xs">
+									<span class="text-gray-600">{period.alunos_avaliados} alunos avaliados</span>
+									<span class="font-medium text-gray-700">{percentage}%</span>
+								</div>
+								<Progress value={percentage} class="h-2" />
+							</Card.Content>
 						</Card.Root>
 					</a>
 				{/each}
