@@ -3,6 +3,7 @@
 	import EvaluationHeader from '$lib/components/app/EvaluationHeader.svelte';
 	import EvaluationFooter from '$lib/components/app/EvaluationFooter.svelte';
 	import AnthropometryForm from '$lib/components/app/AnthropometryForm.svelte';
+	import VisualAcuityForm from '$lib/components/app/VisualAcuityForm.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { formatPeriod, calculateAge } from '$lib/utils/periods';
@@ -25,42 +26,70 @@
 		observacoes: data.anthropometry?.observacoes ?? ''
 	});
 
-	// Save handler
+	// Visual acuity form state
+	let visualAcuityData = $state({
+		olhoDireito: data.visualAcuity?.olho_direito ?? null,
+		olhoEsquerdo: data.visualAcuity?.olho_esquerdo ?? null,
+		olhoDireitoReteste: data.visualAcuity?.olho_direito_reteste ?? null,
+		olhoEsquerdoReteste: data.visualAcuity?.olho_esquerdo_reteste ?? null,
+		observacoes: data.visualAcuity?.observacoes ?? ''
+	});
+
+	// Save handler - saves data from ALL tabs
 	async function handleSave() {
-		// Only save if on antropometria tab and has data
-		if (activeTab === 'antropometria' && (anthropometryData.pesoKg || anthropometryData.alturaCm)) {
-			isSaving = true;
+		isSaving = true;
 
-			const formData = new FormData();
-			formData.append('peso_kg', String(anthropometryData.pesoKg ?? 0));
-			formData.append('altura_cm', String(anthropometryData.alturaCm ?? 0));
-			formData.append('observacoes', anthropometryData.observacoes ?? '');
+		const formData = new FormData();
 
-			try {
-				const response = await fetch('?/saveAnthropometry', {
-					method: 'POST',
-					body: formData
+		// Add anthropometry data if present
+		if (anthropometryData.pesoKg || anthropometryData.alturaCm) {
+			formData.append('peso_kg', String(anthropometryData.pesoKg ?? ''));
+			formData.append('altura_cm', String(anthropometryData.alturaCm ?? ''));
+			formData.append('observacoes_antropometria', anthropometryData.observacoes ?? '');
+		}
+
+		// Add visual acuity data if present
+		if (
+			visualAcuityData.olhoDireito ||
+			visualAcuityData.olhoEsquerdo ||
+			visualAcuityData.olhoDireitoReteste ||
+			visualAcuityData.olhoEsquerdoReteste
+		) {
+			if (visualAcuityData.olhoDireito !== null)
+				formData.append('olho_direito', String(visualAcuityData.olhoDireito));
+			if (visualAcuityData.olhoEsquerdo !== null)
+				formData.append('olho_esquerdo', String(visualAcuityData.olhoEsquerdo));
+			if (visualAcuityData.olhoDireitoReteste !== null)
+				formData.append('olho_direito_reteste', String(visualAcuityData.olhoDireitoReteste));
+			if (visualAcuityData.olhoEsquerdoReteste !== null)
+				formData.append('olho_esquerdo_reteste', String(visualAcuityData.olhoEsquerdoReteste));
+			formData.append('observacoes_visual', visualAcuityData.observacoes ?? '');
+		}
+
+		try {
+			const response = await fetch('?/saveEvaluation', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+
+			if (result.type === 'success') {
+				toast.success('Dados salvos com sucesso!', {
+					description: 'Avaliação registrada'
 				});
-
-				const result = await response.json();
-
-				if (result.type === 'success') {
-					toast.success('Dados salvos com sucesso!', {
-						description: 'Avaliação antropométrica registrada'
-					});
-				} else {
-					const errorMsg = result.data?.error || 'Erro ao salvar dados';
-					toast.error('Erro ao salvar', {
-						description: errorMsg
-					});
-				}
-			} catch (error) {
+			} else {
+				const errorMsg = result.data?.error || 'Erro ao salvar dados';
 				toast.error('Erro ao salvar', {
-					description: 'Ocorreu um erro ao tentar salvar os dados'
+					description: errorMsg
 				});
-			} finally {
-				isSaving = false;
 			}
+		} catch (error) {
+			toast.error('Erro ao salvar', {
+				description: 'Ocorreu um erro ao tentar salvar os dados'
+			});
+		} finally {
+			isSaving = false;
 		}
 	}
 </script>
@@ -127,13 +156,15 @@
 				</Tabs.Content>
 
 				<Tabs.Content value="visual">
-					<div
-						class="bg-white rounded-lg border border-gray-200 p-6 min-h-[300px] flex items-center justify-center"
-					>
-						<p class="text-gray-500 text-center">
-							Formulário de Avaliação de Acuidade Visual<br />
-							<span class="text-sm">(Será implementado na Story 2.5)</span>
-						</p>
+					<div class="bg-white rounded-lg border border-gray-200">
+						<VisualAcuityForm
+							bind:olhoDireito={visualAcuityData.olhoDireito}
+							bind:olhoEsquerdo={visualAcuityData.olhoEsquerdo}
+							bind:olhoDireitoReteste={visualAcuityData.olhoDireitoReteste}
+							bind:olhoEsquerdoReteste={visualAcuityData.olhoEsquerdoReteste}
+							bind:observacoes={visualAcuityData.observacoes}
+							disabled={alunoAusente}
+						/>
 					</div>
 				</Tabs.Content>
 

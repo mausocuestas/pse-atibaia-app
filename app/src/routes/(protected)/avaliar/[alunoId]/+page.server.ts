@@ -6,6 +6,10 @@ import {
 	getAnthropometryEvaluation,
 	saveAnthropometryEvaluation
 } from '$lib/server/db/queries/anthropometry';
+import {
+	getVisualAcuityEvaluation,
+	saveVisualAcuityEvaluation
+} from '$lib/server/db/queries/visual-acuity';
 import { calculateBMI, calculateCDCClassification } from '$lib/utils/cdc-classification';
 import { calculateAge } from '$lib/utils/periods';
 import { z } from 'zod';
@@ -57,6 +61,9 @@ export const load: PageServerLoad = async ({ params }) => {
 	// Load existing anthropometry evaluation
 	const anthropometry = await getAnthropometryEvaluation(alunoId, CURRENT_YEAR);
 
+	// Load existing visual acuity evaluation
+	const visualAcuity = await getVisualAcuityEvaluation(alunoId, CURRENT_YEAR);
+
 	return {
 		student,
 		enrollment,
@@ -66,12 +73,13 @@ export const load: PageServerLoad = async ({ params }) => {
 			currentPosition: currentIndex + 1,
 			totalStudents: classStudents.length
 		},
-		anthropometry
+		anthropometry,
+		visualAcuity
 	};
 };
 
 export const actions: Actions = {
-	saveAnthropometry: async ({ request, params, locals }) => {
+	saveEvaluation: async ({ request, params, locals }) => {
 		const session = await locals.auth();
 
 		if (!session) {
@@ -86,20 +94,8 @@ export const actions: Actions = {
 
 		// Get form data
 		const formData = await request.formData();
-		const pesoKg = Number(formData.get('peso_kg'));
-		const alturaCm = Number(formData.get('altura_cm'));
-		const observacoes = formData.get('observacoes')?.toString() || null;
 
-		// Validate peso and altura
-		if (isNaN(pesoKg) || pesoKg <= 0 || pesoKg > 300) {
-			return fail(400, { error: 'Peso inválido. Deve ser entre 0 e 300 kg.' });
-		}
-
-		if (isNaN(alturaCm) || alturaCm <= 0 || alturaCm > 250) {
-			return fail(400, { error: 'Altura inválida. Deve ser entre 0 e 250 cm.' });
-		}
-
-		// Fetch student data for age and sex
+		// Fetch student data (needed for anthropometry calculations)
 		const student = await getStudentById(alunoId);
 		if (!student || !student.data_nasc) {
 			return fail(404, { error: 'Student not found or missing birth date' });
@@ -111,35 +107,108 @@ export const actions: Actions = {
 			return fail(404, { error: 'Student enrollment not found' });
 		}
 
-		// Calculate BMI and CDC classification
-		const imc = calculateBMI(pesoKg, alturaCm);
-		const age = calculateAge(student.data_nasc);
-		const classificacaoCDC = calculateCDCClassification(imc, age, student.sexo ?? 'M');
-
 		// Extract session user data
 		const profissional_id = (session?.user as any)?.profissional_id;
 		const usf_id = (session?.user as any)?.usf_id;
 
-		// Save to database
-		const result = await saveAnthropometryEvaluation({
-			aluno_id: alunoId,
-			escola_id: enrollment.escola_id,
-			profissional_id: profissional_id ?? null,
-			usf_id: usf_id ?? null,
-			ano_referencia: CURRENT_YEAR,
-			peso_kg: pesoKg,
-			altura_cm: alturaCm,
-			data_nascimento: student.data_nasc,
-			sexo: (student.sexo ?? 'M') as 'M' | 'F',
-			imc,
-			classificacao_cdc: classificacaoCDC,
-			observacoes
-		});
+		try {
+			// Save Anthropometry data if present
+			if (formData.has('peso_kg') || formData.has('altura_cm')) {
+				const pesoKg = Number(formData.get('peso_kg'));
+				const alturaCm = Number(formData.get('altura_cm'));
+				const observacoesAntro = formData.get('observacoes_antropometria')?.toString() || null;
 
-		if (!result) {
-			return fail(500, { error: 'Falha ao salvar dados de antropometria' });
+				// Validate peso and altura
+				if (pesoKg > 0 && alturaCm > 0) {
+					if (pesoKg > 300) {
+						return fail(400, { error: 'Peso inválido. Deve ser entre 0 e 300 kg.' });
+					}
+					if (alturaCm > 250) {
+						return fail(400, { error: 'Altura inválida. Deve ser entre 0 e 250 cm.' });
+					}
+
+					// Calculate BMI and CDC classification
+					const imc = calculateBMI(pesoKg, alturaCm);
+					const age = calculateAge(student.data_nasc);
+					const classificacaoCDC = calculateCDCClassification(imc, age, student.sexo ?? 'M');
+
+					// Save to database
+					await saveAnthropometryEvaluation({
+						aluno_id: alunoId,
+						escola_id: enrollment.escola_id,
+						profissional_id: profissional_id ?? null,
+						usf_id: usf_id ?? null,
+						ano_referencia: CURRENT_YEAR,
+						peso_kg: pesoKg,
+						altura_cm: alturaCm,
+						data_nascimento: student.data_nasc,
+						sexo: (student.sexo ?? 'M') as 'M' | 'F',
+						imc,
+						classificacao_cdc: classificacaoCDC,
+						observacoes: observacoesAntro
+					});
+				}
+			}
+
+			// Save Visual Acuity data if present
+			if (
+				formData.has('olho_direito') ||
+				formData.has('olho_esquerdo') ||
+				formData.has('olho_direito_reteste') ||
+				formData.has('olho_esquerdo_reteste')
+			) {
+				const olhoDireito = formData.get('olho_direito')
+					? Number(formData.get('olho_direito'))
+					: null;
+				const olhoEsquerdo = formData.get('olho_esquerdo')
+					? Number(formData.get('olho_esquerdo'))
+					: null;
+				const olhoDireitoReteste = formData.get('olho_direito_reteste')
+					? Number(formData.get('olho_direito_reteste'))
+					: null;
+				const olhoEsquerdoReteste = formData.get('olho_esquerdo_reteste')
+					? Number(formData.get('olho_esquerdo_reteste'))
+					: null;
+				const observacoesVisual = formData.get('observacoes_visual')?.toString() || null;
+
+				// Calculate tem_problema flags based on threshold (< 0.7 indicates potential issue)
+				// Use reteste value if present, otherwise use initial measurement
+				const temProblemaOD =
+					olhoDireitoReteste !== null
+						? olhoDireitoReteste < 0.7
+						: olhoDireito !== null
+							? olhoDireito < 0.7
+							: null;
+
+				const temProblemaOE =
+					olhoEsquerdoReteste !== null
+						? olhoEsquerdoReteste < 0.7
+						: olhoEsquerdo !== null
+							? olhoEsquerdo < 0.7
+							: null;
+
+				await saveVisualAcuityEvaluation({
+					aluno_id: alunoId,
+					escola_id: enrollment.escola_id,
+					profissional_id: profissional_id ?? null,
+					usf_id: usf_id ?? null,
+					ano_referencia: CURRENT_YEAR,
+					olho_direito: olhoDireito,
+					olho_esquerdo: olhoEsquerdo,
+					olho_direito_reteste: olhoDireitoReteste,
+					olho_esquerdo_reteste: olhoEsquerdoReteste,
+					tem_problema_od: temProblemaOD,
+					tem_problema_oe: temProblemaOE,
+					observacoes: observacoesVisual
+				});
+			}
+
+			// TODO: Save Dental data when Story 2.6 is implemented
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error saving evaluation data:', error);
+			return fail(500, { error: 'Falha ao salvar dados de avaliação' });
 		}
-
-		return { success: true, data: result };
 	}
 };
