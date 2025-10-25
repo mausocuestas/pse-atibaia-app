@@ -2,22 +2,66 @@
 	import type { PageData } from './$types';
 	import EvaluationHeader from '$lib/components/app/EvaluationHeader.svelte';
 	import EvaluationFooter from '$lib/components/app/EvaluationFooter.svelte';
+	import AnthropometryForm from '$lib/components/app/AnthropometryForm.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { formatPeriod, calculateAge } from '$lib/utils/periods';
+	import { toast } from 'svelte-sonner';
 
 	let { data }: { data: PageData } = $props();
 
 	// State management
 	let alunoAusente = $state(false);
 	let activeTab = $state('antropometria');
+	let isSaving = $state(false);
 
 	// Calculate age using shared utility function
 	const age = $derived(calculateAge(data.student.data_nasc!));
 
-	// Save handler (placeholder for Story 2.7)
-	function handleSave() {
-		console.log('Save functionality will be implemented in Story 2.7');
+	// Anthropometry form state
+	let anthropometryData = $state({
+		pesoKg: data.anthropometry?.peso_kg ?? null,
+		alturaCm: data.anthropometry?.altura_cm ?? null,
+		observacoes: data.anthropometry?.observacoes ?? ''
+	});
+
+	// Save handler
+	async function handleSave() {
+		// Only save if on antropometria tab and has data
+		if (activeTab === 'antropometria' && (anthropometryData.pesoKg || anthropometryData.alturaCm)) {
+			isSaving = true;
+
+			const formData = new FormData();
+			formData.append('peso_kg', String(anthropometryData.pesoKg ?? 0));
+			formData.append('altura_cm', String(anthropometryData.alturaCm ?? 0));
+			formData.append('observacoes', anthropometryData.observacoes ?? '');
+
+			try {
+				const response = await fetch('?/saveAnthropometry', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+
+				if (result.type === 'success') {
+					toast.success('Dados salvos com sucesso!', {
+						description: 'Avaliação antropométrica registrada'
+					});
+				} else {
+					const errorMsg = result.data?.error || 'Erro ao salvar dados';
+					toast.error('Erro ao salvar', {
+						description: errorMsg
+					});
+				}
+			} catch (error) {
+				toast.error('Erro ao salvar', {
+					description: 'Ocorreu um erro ao tentar salvar os dados'
+				});
+			} finally {
+				isSaving = false;
+			}
+		}
 	}
 </script>
 
@@ -70,13 +114,15 @@
 				</Tabs.List>
 
 				<Tabs.Content value="antropometria">
-					<div
-						class="bg-white rounded-lg border border-gray-200 p-6 min-h-[300px] flex items-center justify-center"
-					>
-						<p class="text-gray-500 text-center">
-							Formulário de Avaliação Antropométrica<br />
-							<span class="text-sm">(Será implementado na Story 2.4)</span>
-						</p>
+					<div class="bg-white rounded-lg border border-gray-200">
+						<AnthropometryForm
+							studentAge={age}
+							studentSex={data.student.sexo ?? 'M'}
+							bind:pesoKg={anthropometryData.pesoKg}
+							bind:alturaCm={anthropometryData.alturaCm}
+							bind:observacoes={anthropometryData.observacoes}
+							disabled={alunoAusente}
+						/>
 					</div>
 				</Tabs.Content>
 
