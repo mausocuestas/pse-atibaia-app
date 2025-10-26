@@ -58,6 +58,7 @@ export interface AvaliacaoOdontologica {
 	classificacao_completa: string | null;
 	precisa_art: boolean;
 	recebeu_atf: boolean;
+	has_escovacao: boolean;
 	observacoes: string | null;
 	created_at: Date;
 	updated_at: Date;

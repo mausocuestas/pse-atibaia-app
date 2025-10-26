@@ -4,6 +4,7 @@
 	import EvaluationFooter from '$lib/components/app/EvaluationFooter.svelte';
 	import AnthropometryForm from '$lib/components/app/AnthropometryForm.svelte';
 	import VisualAcuityForm from '$lib/components/app/VisualAcuityForm.svelte';
+	import DentalEvaluationForm from '$lib/components/app/DentalEvaluationForm.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { formatPeriod, calculateAge } from '$lib/utils/periods';
@@ -35,6 +36,18 @@
 		observacoes: data.visualAcuity?.observacoes ?? ''
 	});
 
+	// Dental evaluation form state
+	let dentalData = $state({
+		risco: data.dental?.risco ?? null,
+		complemento: data.dental?.complemento ?? null,
+		classificacaoCompleta: data.dental?.classificacao_completa ?? null,
+		receberATF: data.dental?.recebeu_atf ?? false,
+		precisaART: data.dental?.precisa_art ?? false,
+		qtdeDentesART: data.dental?.qtde_dentes_art ?? 0,
+		hasEscovacao: data.dental?.has_escovacao ?? false,
+		observacoes: data.dental?.observacoes ?? ''
+	});
+
 	// Track previous student to detect changes
 	let previousStudentId = $state<number | null>(null);
 
@@ -61,6 +74,15 @@
 			visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
 			visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
 
+			dentalData.risco = data.dental?.risco ?? null;
+			dentalData.complemento = data.dental?.complemento ?? null;
+			dentalData.classificacaoCompleta = data.dental?.classificacao_completa ?? null;
+			dentalData.receberATF = data.dental?.recebeu_atf ?? false;
+			dentalData.precisaART = data.dental?.precisa_art ?? false;
+			dentalData.qtdeDentesART = data.dental?.qtde_dentes_art ?? 0;
+			dentalData.hasEscovacao = data.dental?.has_escovacao ?? false;
+			dentalData.observacoes = data.dental?.observacoes ?? '';
+
 			console.log('✅ Loaded visual acuity:', visualAcuityData);
 
 			// Reset ausente checkbox
@@ -79,6 +101,15 @@
 			visualAcuityData.olhoDireitoReteste = data.visualAcuity?.olho_direito_reteste ?? null;
 			visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
 			visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
+
+			dentalData.risco = data.dental?.risco ?? null;
+			dentalData.complemento = data.dental?.complemento ?? null;
+			dentalData.classificacaoCompleta = data.dental?.classificacao_completa ?? null;
+			dentalData.receberATF = data.dental?.recebeu_atf ?? false;
+			dentalData.precisaART = data.dental?.precisa_art ?? false;
+			dentalData.qtdeDentesART = data.dental?.qtde_dentes_art ?? 0;
+			dentalData.hasEscovacao = data.dental?.has_escovacao ?? false;
+			dentalData.observacoes = data.dental?.observacoes ?? '';
 
 			console.log('✅ Loaded visual acuity (first):', visualAcuityData);
 		}
@@ -115,6 +146,19 @@
 			if (visualAcuityData.olhoEsquerdoReteste !== null)
 				formData.append('olho_esquerdo_reteste', String(visualAcuityData.olhoEsquerdoReteste));
 			formData.append('observacoes_visual', visualAcuityData.observacoes ?? '');
+		}
+
+		// Add dental evaluation data if present
+		if (dentalData.risco) {
+			formData.append('risco', dentalData.risco);
+			if (dentalData.complemento) formData.append('complemento', dentalData.complemento);
+			if (dentalData.classificacaoCompleta)
+				formData.append('classificacao_completa', dentalData.classificacaoCompleta);
+			formData.append('recebeu_atf', String(dentalData.receberATF));
+			formData.append('precisa_art', String(dentalData.precisaART));
+			formData.append('qtde_dentes_art', String(dentalData.qtdeDentesART));
+			formData.append('has_escovacao', String(dentalData.hasEscovacao));
+			formData.append('observacoes_dental', dentalData.observacoes ?? '');
 		}
 
 		try {
@@ -220,13 +264,18 @@
 				</Tabs.Content>
 
 				<Tabs.Content value="odonto">
-					<div
-						class="bg-white rounded-lg border border-gray-200 p-6 min-h-[300px] flex items-center justify-center"
-					>
-						<p class="text-gray-500 text-center">
-							Formulário de Avaliação Odontológica<br />
-							<span class="text-sm">(Será implementado na Story 2.6)</span>
-						</p>
+					<div class="bg-white rounded-lg border border-gray-200">
+						<DentalEvaluationForm
+							bind:risco={dentalData.risco}
+							bind:complemento={dentalData.complemento}
+							bind:classificacaoCompleta={dentalData.classificacaoCompleta}
+							bind:receberATF={dentalData.receberATF}
+							bind:precisaART={dentalData.precisaART}
+							bind:qtdeDentesART={dentalData.qtdeDentesART}
+							bind:hasEscovacao={dentalData.hasEscovacao}
+							bind:observacoes={dentalData.observacoes}
+							disabled={alunoAusente}
+						/>
 					</div>
 				</Tabs.Content>
 			</Tabs.Root>

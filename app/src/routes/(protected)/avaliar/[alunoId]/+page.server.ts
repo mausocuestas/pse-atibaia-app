@@ -10,6 +10,7 @@ import {
 	getVisualAcuityEvaluation,
 	saveVisualAcuityEvaluation
 } from '$lib/server/db/queries/visual-acuity';
+import { getDentalEvaluation, saveDentalEvaluation } from '$lib/server/db/queries/dental';
 import { calculateBMI, calculateCDCClassification } from '$lib/utils/cdc-classification';
 import { calculateAge } from '$lib/utils/periods';
 import { z } from 'zod';
@@ -64,6 +65,9 @@ export const load: PageServerLoad = async ({ params }) => {
 	// Load existing visual acuity evaluation
 	const visualAcuity = await getVisualAcuityEvaluation(alunoId, CURRENT_YEAR);
 
+	// Load existing dental evaluation
+	const dental = await getDentalEvaluation(alunoId, CURRENT_YEAR);
+
 	return {
 		student,
 		enrollment,
@@ -74,7 +78,8 @@ export const load: PageServerLoad = async ({ params }) => {
 			totalStudents: classStudents.length
 		},
 		anthropometry,
-		visualAcuity
+		visualAcuity,
+		dental
 	};
 };
 
@@ -208,7 +213,42 @@ export const actions: Actions = {
 				}
 			}
 
-			// TODO: Save Dental data when Story 2.6 is implemented
+			// Save Dental Evaluation data if present
+			if (formData.has('risco')) {
+				const risco = formData.get('risco')?.toString();
+				const complemento = formData.get('complemento')?.toString() || null;
+				const classificacaoCompleta = formData.get('classificacao_completa')?.toString() || null;
+				const receberATF = formData.get('recebeu_atf') === 'true';
+				const precisaART = formData.get('precisa_art') === 'true';
+				const qtdeDentesART = formData.get('qtde_dentes_art')
+					? Number(formData.get('qtde_dentes_art'))
+					: 0;
+				const hasEscovacao = formData.get('has_escovacao') === 'true';
+				const observacoesDental = formData.get('observacoes_dental')?.toString() || null;
+
+				if (risco) {
+					const dentalResult = await saveDentalEvaluation({
+						aluno_id: alunoId,
+						escola_id: enrollment.escola_id,
+						profissional_id: profissional_id ?? null,
+						usf_id: usf_id ?? null,
+						ano_referencia: CURRENT_YEAR,
+						risco: risco as 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G',
+						complemento: complemento as '+' | '-' | null,
+						classificacao_completa: classificacaoCompleta,
+						recebeu_atf: receberATF,
+						precisa_art: precisaART,
+						qtde_dentes_art: precisaART ? qtdeDentesART : 0, // Force 0 if ART not needed
+						has_escovacao: hasEscovacao,
+						observacoes: observacoesDental
+					});
+
+					if (!dentalResult) {
+						console.error('Failed to save dental evaluation data');
+						return fail(500, { error: 'Falha ao salvar dados de avaliação odontológica' });
+					}
+				}
+			}
 
 			return { success: true };
 		} catch (error) {
