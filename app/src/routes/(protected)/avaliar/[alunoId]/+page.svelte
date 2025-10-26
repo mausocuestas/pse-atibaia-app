@@ -35,6 +35,25 @@
 		observacoes: data.visualAcuity?.observacoes ?? ''
 	});
 
+	// Reset form data when student changes
+	$effect(() => {
+		// Reset anthropometry data
+		anthropometryData.pesoKg = data.anthropometry?.peso_kg ?? null;
+		anthropometryData.alturaCm = data.anthropometry?.altura_cm ?? null;
+		anthropometryData.observacoes = data.anthropometry?.observacoes ?? '';
+
+		// Reset visual acuity data
+		visualAcuityData.olhoDireito = data.visualAcuity?.olho_direito ?? null;
+		visualAcuityData.olhoEsquerdo = data.visualAcuity?.olho_esquerdo ?? null;
+		visualAcuityData.olhoDireitoReteste = data.visualAcuity?.olho_direito_reteste ?? null;
+		visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
+		visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
+
+		// Reset other states
+		alunoAusente = false;
+		activeTab = 'antropometria';
+	});
+
 	// Save handler - saves data from ALL tabs
 	async function handleSave() {
 		isSaving = true;

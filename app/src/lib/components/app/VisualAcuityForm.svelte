@@ -22,6 +22,32 @@
 		observacoes?: string;
 		disabled?: boolean;
 	} = $props();
+
+	// Validation function to clamp values between 0 and 2.0
+	function validateAcuityValue(value: number | null): number | null {
+		if (value === null || value === undefined || isNaN(value)) return null;
+		if (value < 0) return 0;
+		if (value > 2.0) return 2.0;
+		return Math.round(value * 100) / 100; // Round to 2 decimal places
+	}
+
+	// Apply validation on blur for each field
+	function handleBlur(field: 'od' | 'oe' | 'od_reteste' | 'oe_reteste') {
+		switch (field) {
+			case 'od':
+				olhoDireito = validateAcuityValue(olhoDireito);
+				break;
+			case 'oe':
+				olhoEsquerdo = validateAcuityValue(olhoEsquerdo);
+				break;
+			case 'od_reteste':
+				olhoDireitoReteste = validateAcuityValue(olhoDireitoReteste);
+				break;
+			case 'oe_reteste':
+				olhoEsquerdoReteste = validateAcuityValue(olhoEsquerdoReteste);
+				break;
+		}
+	}
 </script>
 
 <div class="flex flex-col gap-4 p-4">
@@ -41,6 +67,7 @@
 					min="0"
 					max="2.0"
 					bind:value={olhoDireito}
+					onblur={() => handleBlur('od')}
 					{disabled}
 					placeholder="Ex: 1.0"
 					class="text-base"
@@ -58,6 +85,7 @@
 					min="0"
 					max="2.0"
 					bind:value={olhoEsquerdo}
+					onblur={() => handleBlur('oe')}
 					{disabled}
 					placeholder="Ex: 1.0"
 					class="text-base"
@@ -112,6 +140,7 @@
 					min="0"
 					max="2.0"
 					bind:value={olhoDireitoReteste}
+					onblur={() => handleBlur('od_reteste')}
 					{disabled}
 					placeholder="Ex: 1.0"
 					class="text-base"
@@ -129,6 +158,7 @@
 					min="0"
 					max="2.0"
 					bind:value={olhoEsquerdoReteste}
+					onblur={() => handleBlur('oe_reteste')}
 					{disabled}
 					placeholder="Ex: 1.0"
 					class="text-base"

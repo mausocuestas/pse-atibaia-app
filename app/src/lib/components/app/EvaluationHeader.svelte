@@ -14,11 +14,32 @@
 	} = $props();
 
 	const formattedDOB = $derived(new Date(dateOfBirth).toLocaleDateString('pt-BR'));
+
+	// Visual feedback when student changes
+	let isNewStudent = $state(false);
+
+	$effect(() => {
+		// Trigger animation when student name changes
+		isNewStudent = true;
+		const timer = setTimeout(() => {
+			isNewStudent = false;
+		}, 1500);
+
+		return () => clearTimeout(timer);
+	});
 </script>
 
 <header class="bg-white border-b border-gray-200 p-4 sticky top-0 z-10 shadow-sm">
 	<div class="flex flex-col gap-3">
-		<h1 class="text-xl font-bold text-gray-900">{studentName}</h1>
+		<h1
+			class="text-xl font-bold text-gray-900 transition-colors duration-500"
+			class:bg-green-100={isNewStudent}
+			class:px-2={isNewStudent}
+			class:py-1={isNewStudent}
+			class:rounded={isNewStudent}
+		>
+			{studentName}
+		</h1>
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-4 text-sm text-gray-600">
 				<span>Nascimento: {formattedDOB}</span>
