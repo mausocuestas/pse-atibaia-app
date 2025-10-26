@@ -9,6 +9,8 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import { formatPeriod, calculateAge } from '$lib/utils/periods';
 	import { toast } from 'svelte-sonner';
+	import { localEvaluationStore, type LocalEvaluationData } from '$lib/stores/local-evaluation-store.svelte';
+	import { onMount } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -16,6 +18,7 @@
 	let alunoAusente = $state(false);
 	let activeTab = $state('antropometria');
 	let isSaving = $state(false);
+	let isInitialized = $state(false);
 
 	// Calculate age using shared utility function
 	const age = $derived(calculateAge(data.student.data_nasc!));
@@ -50,6 +53,68 @@
 
 	// Track previous student to detect changes
 	let previousStudentId = $state<number | null>(null);
+
+	// Initialize local storage on mount
+	onMount(async () => {
+		await localEvaluationStore.init();
+		await loadLocalDataIfExists();
+		isInitialized = true;
+	});
+
+	// Load local data if it exists (prioritize local over server if newer)
+	async function loadLocalDataIfExists() {
+		const localData = await localEvaluationStore.loadEvaluation(data.student.id);
+
+		if (!localData) {
+			console.log('ℹ️ No local data found for student', data.student.id);
+			return;
+		}
+
+		console.log('📦 Found local data for student', data.student.id, localData);
+
+		// Check if local data is newer than server data (conflict resolution)
+		const hasServerData = data.anthropometry || data.visualAcuity || data.dental;
+		const localTimestamp = localData.timestamp;
+		const timeDiffMinutes = hasServerData ? (Date.now() - localTimestamp) / 1000 / 60 : 0;
+
+		// If server has data and local is significantly older (>5 minutes), use server data
+		if (hasServerData && timeDiffMinutes > 5) {
+			console.log('⚠️ Server data is newer, ignoring local data');
+			return;
+		}
+
+		// Restore local data to form
+		alunoAusente = localData.alunoAusente;
+
+		if (localData.anthropometry) {
+			anthropometryData.pesoKg = localData.anthropometry.peso_kg;
+			anthropometryData.alturaCm = localData.anthropometry.altura_cm;
+			anthropometryData.observacoes = localData.anthropometry.classificacao_cdc || '';
+		}
+
+		if (localData.visualAcuity) {
+			visualAcuityData.olhoDireito = localData.visualAcuity.olho_direito;
+			visualAcuityData.olhoEsquerdo = localData.visualAcuity.olho_esquerdo;
+			visualAcuityData.olhoDireitoReteste = localData.visualAcuity.reteste;
+			visualAcuityData.olhoEsquerdoReteste = null; // Legacy data doesn't have separate reteste
+			visualAcuityData.observacoes = '';
+		}
+
+		if (localData.dental) {
+			dentalData.risco = localData.dental.risco;
+			dentalData.complemento = localData.dental.complemento;
+			dentalData.classificacaoCompleta = localData.dental.classificacao_completa;
+			dentalData.receberATF = localData.dental.recebeu_atf;
+			dentalData.precisaART = localData.dental.precisa_art;
+			dentalData.qtdeDentesART = localData.dental.qtde_dentes_art;
+			dentalData.hasEscovacao = localData.dental.has_escovacao;
+			dentalData.observacoes = localData.dental.observacoes || '';
+		}
+
+		toast.info('Dados restaurados do armazenamento local', {
+			duration: 3000
+		});
+	}
 
 	// Reset form data when student changes (but preserve active tab)
 	$effect(() => {
@@ -117,7 +182,75 @@
 		previousStudentId = currentStudentId;
 	});
 
-	// Save handler - saves data from ALL tabs
+	// Auto-save to local storage with debouncing
+	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+	$effect(() => {
+		// Only auto-save after initialization
+		if (!isInitialized) return;
+
+		// Track all form data changes
+		const _ = {
+			alunoAusente,
+			anthropometry: anthropometryData,
+			visualAcuity: visualAcuityData,
+			dental: dentalData
+		};
+
+		// Debounce the save
+		if (saveTimeout) clearTimeout(saveTimeout);
+		saveTimeout = setTimeout(async () => {
+			await saveToLocalStorage();
+		}, 1000); // 1 second debounce
+	});
+
+	// Save current form data to local storage
+	async function saveToLocalStorage() {
+		const localData: LocalEvaluationData = {
+			alunoId: data.student.id,
+			timestamp: Date.now(),
+			syncStatus: 'pending',
+			lastSyncAttempt: null,
+			studentName: data.student.cliente,
+			escolaId: data.enrollment.escola_id,
+			turmaName: data.enrollment.turma,
+			periodo: data.enrollment.periodo,
+			alunoAusente,
+			anthropometry: anthropometryData.pesoKg || anthropometryData.alturaCm
+				? {
+						peso_kg: anthropometryData.pesoKg,
+						altura_cm: anthropometryData.alturaCm,
+						classificacao_cdc: anthropometryData.observacoes || null
+					}
+				: null,
+			visualAcuity: visualAcuityData.olhoDireito || visualAcuityData.olhoEsquerdo
+				? {
+						olho_direito: visualAcuityData.olhoDireito,
+						olho_esquerdo: visualAcuityData.olhoEsquerdo,
+						reteste: visualAcuityData.olhoDireitoReteste
+					}
+				: null,
+			dental: dentalData.risco
+				? {
+						risco: dentalData.risco,
+						complemento: dentalData.complemento,
+						classificacao_completa: dentalData.classificacaoCompleta,
+						recebeu_atf: dentalData.receberATF,
+						precisa_art: dentalData.precisaART,
+						qtde_dentes_art: dentalData.qtdeDentesART,
+						has_escovacao: dentalData.hasEscovacao,
+						observacoes: dentalData.observacoes
+					}
+				: null
+		};
+
+		const success = await localEvaluationStore.saveEvaluation(localData);
+
+		if (success) {
+			console.log('💾 Auto-saved to local storage');
+		}
+	}
+
+	// Save handler - saves data from ALL tabs with offline fallback
 	async function handleSave() {
 		isSaving = true;
 
@@ -162,6 +295,7 @@
 		}
 
 		try {
+			// Attempt server sync first
 			const response = await fetch('?/saveEvaluation', {
 				method: 'POST',
 				body: formData
@@ -170,18 +304,39 @@
 			const result = await response.json();
 
 			if (result.type === 'success') {
-				toast.success('Dados salvos com sucesso!', {
-					description: 'Avaliação registrada'
+				// Server sync successful - clear local storage
+				await localEvaluationStore.clearEvaluation(data.student.id);
+
+				toast.success('Avaliação sincronizada com o servidor!', {
+					description: 'Dados salvos com sucesso',
+					duration: 3000
 				});
+
+				// Navigation will happen via form action redirect
 			} else {
+				// Server returned error - keep data in local storage
+				await localEvaluationStore.updateSyncStatus(data.student.id, 'failed');
+
 				const errorMsg = result.data?.error || 'Erro ao salvar dados';
-				toast.error('Erro ao salvar', {
-					description: errorMsg
+				toast.error('Erro ao salvar no servidor', {
+					description: `${errorMsg}. Dados mantidos localmente.`,
+					duration: 5000
 				});
 			}
 		} catch (error) {
-			toast.error('Erro ao salvar', {
-				description: 'Ocorreu um erro ao tentar salvar os dados'
+			// Network error - save to local storage as fallback
+			console.error('Network error during save:', error);
+
+			await saveToLocalStorage();
+			await localEvaluationStore.updateSyncStatus(data.student.id, 'failed');
+
+			toast.error('Sem conexão com o servidor', {
+				description: 'Dados salvos localmente e serão sincronizados quando possível.',
+				duration: 5000,
+				action: {
+					label: 'Tentar novamente',
+					onClick: () => handleSave()
+				}
 			});
 		} finally {
 			isSaving = false;

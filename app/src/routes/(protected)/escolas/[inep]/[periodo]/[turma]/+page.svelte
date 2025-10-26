@@ -3,6 +3,11 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { formatPeriod, formatDateOfBirthWithAge } from '$lib/utils/periods';
+	import { localEvaluationStore } from '$lib/stores/local-evaluation-store.svelte';
+	import { getEvaluationSyncStatus, getSyncStatusBadgeClass, type EvaluationSyncStatus } from '$lib/utils/sync-status';
+	import { performBackgroundSync } from '$lib/utils/background-sync';
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	let { data }: { data: PageData } = $props();
 
@@ -10,6 +15,51 @@
 	const periodo = data.periodo;
 	const turma = data.turma;
 	const students = data.students || [];
+
+	// Sync status for each student
+	let syncStatuses = $state<Record<number, EvaluationSyncStatus>>({});
+	let isLoadingSyncStatus = $state(true);
+
+	// Load sync status on mount and perform background sync
+	onMount(async () => {
+		await localEvaluationStore.init();
+
+		// Perform background sync first
+		const syncResult = await performBackgroundSync();
+
+		// Show notification if any evaluations were synced
+		if (syncResult.synced > 0) {
+			toast.success(`${syncResult.synced} avaliação(ões) sincronizada(s)`, {
+				description: 'Dados enviados ao servidor com sucesso',
+				duration: 4000
+			});
+		}
+
+		// Show warning if any failed
+		if (syncResult.failed > 0) {
+			toast.warning(`${syncResult.failed} avaliação(ões) não sincronizada(s)`, {
+				description: 'Será tentado novamente na próxima vez',
+				duration: 4000
+			});
+		}
+
+		// Load all sync statuses after background sync
+		await loadAllSyncStatuses();
+		isLoadingSyncStatus = false;
+	});
+
+	// Load sync status for all students
+	async function loadAllSyncStatuses() {
+		const statuses: Record<number, EvaluationSyncStatus> = {};
+
+		for (const student of students) {
+			const hasServerData = student.has_visual_eval || student.has_anthropometric_eval || student.has_dental_eval;
+			const status = await getEvaluationSyncStatus(student.aluno_id, hasServerData);
+			statuses[student.aluno_id] = status;
+		}
+
+		syncStatuses = statuses;
+	}
 </script>
 
 <div class="flex flex-1 flex-col gap-6 p-4 md:p-6">
@@ -66,19 +116,25 @@
 							<div class="text-sm text-gray-600">
 								{formatDateOfBirthWithAge(student.data_nasc, student.idade)}
 							</div>
-							{#if student.has_visual_eval || student.has_anthropometric_eval || student.has_dental_eval}
-								<div class="flex flex-wrap gap-2 mt-1">
-									{#if student.has_visual_eval}
-										<Badge variant="secondary">Visual</Badge>
-									{/if}
-									{#if student.has_anthropometric_eval}
-										<Badge variant="secondary">Antropométrica</Badge>
-									{/if}
-									{#if student.has_dental_eval}
-										<Badge variant="secondary">Odontológica</Badge>
-									{/if}
-								</div>
-							{/if}
+							<div class="flex flex-wrap gap-2 mt-1">
+								<!-- Sync Status Badge -->
+								{#if !isLoadingSyncStatus && syncStatuses[student.aluno_id]}
+									<Badge class={getSyncStatusBadgeClass(syncStatuses[student.aluno_id])}>
+										{syncStatuses[student.aluno_id]}
+									</Badge>
+								{/if}
+
+								<!-- Evaluation Type Badges -->
+								{#if student.has_visual_eval}
+									<Badge variant="secondary">Visual</Badge>
+								{/if}
+								{#if student.has_anthropometric_eval}
+									<Badge variant="secondary">Antropométrica</Badge>
+								{/if}
+								{#if student.has_dental_eval}
+									<Badge variant="secondary">Odontológica</Badge>
+								{/if}
+							</div>
 						</div>
 					</a>
 				{/each}
