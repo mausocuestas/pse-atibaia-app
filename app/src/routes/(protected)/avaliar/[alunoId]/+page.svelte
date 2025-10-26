@@ -35,23 +35,43 @@
 		observacoes: data.visualAcuity?.observacoes ?? ''
 	});
 
-	// Reset form data when student changes
+	// Track previous student to detect changes
+	let previousStudentId = $state<number | null>(null);
+
+	// Reset form data when student changes (but preserve active tab)
 	$effect(() => {
-		// Reset anthropometry data
-		anthropometryData.pesoKg = data.anthropometry?.peso_kg ?? null;
-		anthropometryData.alturaCm = data.anthropometry?.altura_cm ?? null;
-		anthropometryData.observacoes = data.anthropometry?.observacoes ?? '';
+		const currentStudentId = data.student.id;
 
-		// Reset visual acuity data
-		visualAcuityData.olhoDireito = data.visualAcuity?.olho_direito ?? null;
-		visualAcuityData.olhoEsquerdo = data.visualAcuity?.olho_esquerdo ?? null;
-		visualAcuityData.olhoDireitoReteste = data.visualAcuity?.olho_direito_reteste ?? null;
-		visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
-		visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
+		// Only reset if student actually changed
+		if (previousStudentId !== null && previousStudentId !== currentStudentId) {
+			// Load data for new student
+			anthropometryData.pesoKg = data.anthropometry?.peso_kg ?? null;
+			anthropometryData.alturaCm = data.anthropometry?.altura_cm ?? null;
+			anthropometryData.observacoes = data.anthropometry?.observacoes ?? '';
 
-		// Reset other states
-		alunoAusente = false;
-		activeTab = 'antropometria';
+			visualAcuityData.olhoDireito = data.visualAcuity?.olho_direito ?? null;
+			visualAcuityData.olhoEsquerdo = data.visualAcuity?.olho_esquerdo ?? null;
+			visualAcuityData.olhoDireitoReteste = data.visualAcuity?.olho_direito_reteste ?? null;
+			visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
+			visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
+
+			// Reset ausente checkbox
+			alunoAusente = false;
+			// PRESERVE active tab - do NOT reset to 'antropometria'
+		} else {
+			// First load - initialize data
+			anthropometryData.pesoKg = data.anthropometry?.peso_kg ?? null;
+			anthropometryData.alturaCm = data.anthropometry?.altura_cm ?? null;
+			anthropometryData.observacoes = data.anthropometry?.observacoes ?? '';
+
+			visualAcuityData.olhoDireito = data.visualAcuity?.olho_direito ?? null;
+			visualAcuityData.olhoEsquerdo = data.visualAcuity?.olho_esquerdo ?? null;
+			visualAcuityData.olhoDireitoReteste = data.visualAcuity?.olho_direito_reteste ?? null;
+			visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
+			visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
+		}
+
+		previousStudentId = currentStudentId;
 	});
 
 	// Save handler - saves data from ALL tabs

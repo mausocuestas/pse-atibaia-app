@@ -23,28 +23,80 @@
 		disabled?: boolean;
 	} = $props();
 
-	// Validation function to clamp values between 0 and 2.0
-	function validateAcuityValue(value: number | null): number | null {
-		if (value === null || value === undefined || isNaN(value)) return null;
-		if (value < 0) return 0;
-		if (value > 2.0) return 2.0;
-		return Math.round(value * 100) / 100; // Round to 2 decimal places
+	import { toast } from 'svelte-sonner';
+
+	// Validation errors
+	let errors = $state<Record<string, string>>({});
+
+	// Validate acuity value (0.0 to 1.0)
+	function validateAcuityValue(
+		value: number | null,
+		fieldName: string,
+		fieldId: string
+	): boolean {
+		if (value === null || value === undefined) {
+			delete errors[fieldName];
+			return true;
+		}
+
+		if (isNaN(value)) {
+			errors[fieldName] = 'Valor inválido';
+			toast.error('Valor inválido', {
+				description: `${fieldName}: Por favor, insira um número válido`
+			});
+			// Focus back on field
+			setTimeout(() => document.getElementById(fieldId)?.focus(), 100);
+			return false;
+		}
+
+		if (value < 0 || value > 1.0) {
+			errors[fieldName] = 'Valor deve estar entre 0.0 e 1.0';
+			toast.error('Valor fora do intervalo', {
+				description: `${fieldName}: O valor deve estar entre 0.0 e 1.0`
+			});
+			// Focus back on field
+			setTimeout(() => document.getElementById(fieldId)?.focus(), 100);
+			return false;
+		}
+
+		delete errors[fieldName];
+		return true;
 	}
 
 	// Apply validation on blur for each field
 	function handleBlur(field: 'od' | 'oe' | 'od_reteste' | 'oe_reteste') {
 		switch (field) {
 			case 'od':
-				olhoDireito = validateAcuityValue(olhoDireito);
+				if (!validateAcuityValue(olhoDireito, 'Olho Direito', 'olho-direito')) {
+					olhoDireito = null;
+				} else if (olhoDireito !== null) {
+					olhoDireito = Math.round(olhoDireito * 100) / 100;
+				}
 				break;
 			case 'oe':
-				olhoEsquerdo = validateAcuityValue(olhoEsquerdo);
+				if (!validateAcuityValue(olhoEsquerdo, 'Olho Esquerdo', 'olho-esquerdo')) {
+					olhoEsquerdo = null;
+				} else if (olhoEsquerdo !== null) {
+					olhoEsquerdo = Math.round(olhoEsquerdo * 100) / 100;
+				}
 				break;
 			case 'od_reteste':
-				olhoDireitoReteste = validateAcuityValue(olhoDireitoReteste);
+				if (
+					!validateAcuityValue(olhoDireitoReteste, 'OD Reteste', 'olho-direito-reteste')
+				) {
+					olhoDireitoReteste = null;
+				} else if (olhoDireitoReteste !== null) {
+					olhoDireitoReteste = Math.round(olhoDireitoReteste * 100) / 100;
+				}
 				break;
 			case 'oe_reteste':
-				olhoEsquerdoReteste = validateAcuityValue(olhoEsquerdoReteste);
+				if (
+					!validateAcuityValue(olhoEsquerdoReteste, 'OE Reteste', 'olho-esquerdo-reteste')
+				) {
+					olhoEsquerdoReteste = null;
+				} else if (olhoEsquerdoReteste !== null) {
+					olhoEsquerdoReteste = Math.round(olhoEsquerdoReteste * 100) / 100;
+				}
 				break;
 		}
 	}
@@ -58,38 +110,50 @@
 		<div class="grid grid-cols-2 gap-4">
 			<!-- Olho Direito -->
 			<div class="flex flex-col gap-2">
-				<Label for="olho-direito" class="text-sm">Olho Direito (OD)</Label>
+				<div class="flex items-center gap-2">
+					<span class="w-3 h-3 rounded-full bg-red-500" title="Olho Direito"></span>
+					<Label for="olho-direito" class="text-sm">Olho Direito (OD)</Label>
+				</div>
 				<Input
 					id="olho-direito"
 					name="olho_direito"
 					type="number"
 					step="0.01"
 					min="0"
-					max="2.0"
+					max="1.0"
 					bind:value={olhoDireito}
 					onblur={() => handleBlur('od')}
 					{disabled}
-					placeholder="Ex: 1.0"
-					class="text-base"
+					placeholder="0.0 a 1.0"
+					class={errors['Olho Direito'] ? 'text-base border-red-500' : 'text-base'}
 				/>
+				{#if errors['Olho Direito']}
+					<span class="text-xs text-red-600">{errors['Olho Direito']}</span>
+				{/if}
 			</div>
 
 			<!-- Olho Esquerdo -->
 			<div class="flex flex-col gap-2">
-				<Label for="olho-esquerdo" class="text-sm">Olho Esquerdo (OE)</Label>
+				<div class="flex items-center gap-2">
+					<span class="w-3 h-3 rounded-full bg-blue-500" title="Olho Esquerdo"></span>
+					<Label for="olho-esquerdo" class="text-sm">Olho Esquerdo (OE)</Label>
+				</div>
 				<Input
 					id="olho-esquerdo"
 					name="olho_esquerdo"
 					type="number"
 					step="0.01"
 					min="0"
-					max="2.0"
+					max="1.0"
 					bind:value={olhoEsquerdo}
 					onblur={() => handleBlur('oe')}
 					{disabled}
-					placeholder="Ex: 1.0"
-					class="text-base"
+					placeholder="0.0 a 1.0"
+					class={errors['Olho Esquerdo'] ? 'text-base border-blue-500' : 'text-base'}
 				/>
+				{#if errors['Olho Esquerdo']}
+					<span class="text-xs text-blue-600">{errors['Olho Esquerdo']}</span>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -131,38 +195,50 @@
 		<div class="grid grid-cols-2 gap-4">
 			<!-- Olho Direito Reteste -->
 			<div class="flex flex-col gap-2">
-				<Label for="olho-direito-reteste" class="text-sm">OD Reteste</Label>
+				<div class="flex items-center gap-2">
+					<span class="w-3 h-3 rounded-full bg-red-500" title="Olho Direito"></span>
+					<Label for="olho-direito-reteste" class="text-sm">OD Reteste</Label>
+				</div>
 				<Input
 					id="olho-direito-reteste"
 					name="olho_direito_reteste"
 					type="number"
 					step="0.01"
 					min="0"
-					max="2.0"
+					max="1.0"
 					bind:value={olhoDireitoReteste}
 					onblur={() => handleBlur('od_reteste')}
 					{disabled}
-					placeholder="Ex: 1.0"
-					class="text-base"
+					placeholder="0.0 a 1.0"
+					class={errors['OD Reteste'] ? 'text-base border-red-500' : 'text-base'}
 				/>
+				{#if errors['OD Reteste']}
+					<span class="text-xs text-red-600">{errors['OD Reteste']}</span>
+				{/if}
 			</div>
 
 			<!-- Olho Esquerdo Reteste -->
 			<div class="flex flex-col gap-2">
-				<Label for="olho-esquerdo-reteste" class="text-sm">OE Reteste</Label>
+				<div class="flex items-center gap-2">
+					<span class="w-3 h-3 rounded-full bg-blue-500" title="Olho Esquerdo"></span>
+					<Label for="olho-esquerdo-reteste" class="text-sm">OE Reteste</Label>
+				</div>
 				<Input
 					id="olho-esquerdo-reteste"
 					name="olho_esquerdo_reteste"
 					type="number"
 					step="0.01"
 					min="0"
-					max="2.0"
+					max="1.0"
 					bind:value={olhoEsquerdoReteste}
 					onblur={() => handleBlur('oe_reteste')}
 					{disabled}
-					placeholder="Ex: 1.0"
-					class="text-base"
+					placeholder="0.0 a 1.0"
+					class={errors['OE Reteste'] ? 'text-base border-blue-500' : 'text-base'}
 				/>
+				{#if errors['OE Reteste']}
+					<span class="text-xs text-blue-600">{errors['OE Reteste']}</span>
+				{/if}
 			</div>
 		</div>
 	</div>
