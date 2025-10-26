@@ -17,15 +17,24 @@
 
 	// Visual feedback when student changes
 	let isNewStudent = $state(false);
+	let previousName = $state<string | null>(null);
 
 	$effect(() => {
-		// Trigger animation when student name changes
-		isNewStudent = true;
-		const timer = setTimeout(() => {
-			isNewStudent = false;
-		}, 1500);
+		// Track studentName to detect changes
+		const currentName = studentName;
 
-		return () => clearTimeout(timer);
+		// Only trigger animation if student actually changed (not first load)
+		if (previousName !== null && previousName !== currentName) {
+			isNewStudent = true;
+			const timer = setTimeout(() => {
+				isNewStudent = false;
+			}, 1500);
+
+			// Cleanup
+			return () => clearTimeout(timer);
+		}
+
+		previousName = currentName;
 	});
 </script>
 

@@ -19,6 +19,16 @@ Since we are connecting to an **existing** Neon PostgreSQL database:
 3. Future migrations should be numbered sequentially (001, 002, etc.) and placed in this directory
 4. All migrations should be idempotent when possible
 
+## Migration History
+
+| # | File | Description | Status | Related |
+|---|------|-------------|--------|---------|
+| 000 | `000_initial_schema.sql` | Initial database schema (baseline) | ✅ Applied | Story 1.2 |
+| 001 | `001_add_visual_acuity_unique_constraint.sql` | ⚠️ **DEPRECATED** - Adds unique constraint (aluno_id, ano_referencia) | ❌ Reverted by 002 | Story 2.5 |
+| 002 | `002_remove_visual_acuity_unique_constraint.sql` | Removes unique constraint to allow multiple evaluations/year | ⏳ Pending | Story 2.5 QA |
+| 003 | `003_add_visual_acuity_check_constraints.sql` | Adds CHECK constraints for acuity values (0.0-1.0 range) | ⏳ Pending | Story 2.5 QA |
+| 004 | `004_add_visual_acuity_composite_index.sql` | Adds composite index (aluno_id, avaliado_em) for chronological queries | ⏳ Pending | Story 2.5 QA |
+
 ## Future Migrations
 
 When adding new migrations:
@@ -27,6 +37,7 @@ When adding new migrations:
 2. Include both UP and DOWN migration sections if applicable
 3. Test migrations on a development database before applying to production
 4. Document any breaking changes in commit messages
+5. Update the Migration History table above
 
 ## Migration Tools
 

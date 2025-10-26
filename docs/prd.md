@@ -12,6 +12,7 @@
     | Date | Version | Description | Author |
     | :--- | :--- | :--- | :--- |
     | 20/10/2025 | 1.0 | Initial PRD creation | John (PM) |
+    | 26/10/2025 | 1.1 | Added FR22 (multiple evaluations per school year) and clarified visual acuity value constraints (Story 2.5 QA findings) | John (PM) |
 
 ## 2. Requirements
 ### Functional (Funcionais)
@@ -35,6 +36,7 @@
 *   **FR19: Dashboard de Gestão com Análise Histórica:** Gestores devem ter acesso a um dashboard com métricas, gráficos e análise histórica individual e agregada.
 *   **FR20: Filtragem e Exportação de Dados:** Gestores devem poder filtrar e exportar os dados.
 *   **FR21: Página de Dados Públicos:** O sistema deve ter uma seção de acesso público com dados gerais e anonimizados.
+*   **FR22: Múltiplas Avaliações por Ano Letivo:** O sistema deve permitir o registro de múltiplas avaliações (idealmente duas, uma por semestre) para cada aluno, em cada área (visual, antropometria, odonto), dentro do mesmo ano letivo.
 
 ### Non-Functional (Não Funcionais)
 *   **NFR1: Performance:** A interface de avaliação deve ser performática em redes móveis. Ações devem ter resposta visual imediata.
@@ -151,8 +153,9 @@
 *   **Como um** Avaliador, **eu quero** registrar os índices de acuidade visual, **para que** eu possa identificar alunos que precisam de acompanhamento.
 *   **AC:**
     1.  A aba [Visual] contém campos numéricos para Olho Direito, Olho Esquerdo e Reteste.
-    2.  Fica claro na interface que o campo "Reteste" se refere a uma nova medição de ambos os olhos e seu resultado prevalece sobre as medições individuais.
-    3.  Os dados inseridos podem ser salvos.
+    2.  O valor deve estar no intervalo de 0.0 a 1.0, com incrementos de 0.1.
+    3.  Fica claro na interface que o campo "Reteste" se refere a uma nova medição de ambos os olhos e seu resultado prevalece sobre as medições individuais.
+    4.  Os dados inseridos podem ser salvos.
 
 ### Estória 2.6: Implementação do Formulário de Odontologia
 *   **Como um** Avaliador, **eu quero** usar uma interface otimizada para toque para registrar a avaliação odontológica, **para que** o processo seja rápido e com o mínimo de digitação.

@@ -56,28 +56,21 @@ interface Avaliacao {
   avaliacaoAntropometricaId?: number;
   avaliacaoOdontologicaId?: number;
 }
-  id: number;
-  matriculaId: number;
-  avaliadorId: number;
-  dataAvaliacao: Date;
-  alunoAusente: boolean;
-  // Chaves estrangeiras opcionais para os resultados específicos.
-  // Um único evento de Avaliação pode ter um ou mais tipos de resultados.
-  avaliacaoVisualId?: number;
-  avaliacaoAntropometricaId?: number;
-  avaliacaoOdontologicaId?: number;
-}
 ```
+
+**Nota de Indexação:** A tabela `Avaliacao` deve ter um índice composto em `(matriculaId, dataAvaliacao)` para otimizar a busca de avaliações de um aluno em ordem cronológica. Múltiplas avaliações por aluno por ano são permitidas para suportar reavaliações e testes longitudinais.
 
 **5. AvaliacaoVisual (Resultados Específicos da Visão)**
 ```typescript
 interface AvaliacaoVisual {
   id: number;
-  olhoDireito: number;
-  olhoEsquerdo: number;
-  reteste?: number; // Resultado unificado dos dois olhos
+  olhoDireito: number;  // CHECK: valor entre 0.0 e 1.0
+  olhoEsquerdo: number; // CHECK: valor entre 0.0 e 1.0
+  reteste?: number;     // CHECK: valor entre 0.0 e 1.0 (quando presente)
 }
 ```
+
+**Restrições de Validação:** A tabela `AvaliacaoVisual` deve implementar constraints CHECK em nível de banco de dados para garantir que `olhoDireito`, `olhoEsquerdo` e `reteste` estejam sempre entre 0.0 e 1.0, representando valores de acuidade visual válidos.
 
 **6. AvaliacaoAntropometrica (Resultados Específicos da Antropometria)**
 ```typescript

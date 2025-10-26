@@ -27,8 +27,8 @@ describe('Visual Acuity Query Functions', () => {
 				ano_referencia: 2025,
 				olho_direito: 1.0,
 				olho_esquerdo: 1.0,
-				olho_direito_reteste: 1.2,
-				olho_esquerdo_reteste: 1.2,
+				olho_direito_reteste: 0.9,
+				olho_esquerdo_reteste: 0.95,
 				tem_problema_od: false,
 				tem_problema_oe: false,
 				observacoes: 'Avaliação normal'
@@ -171,8 +171,8 @@ describe('Visual Acuity Query Functions', () => {
 				ano_referencia: 2025,
 				olho_direito: 1.0,
 				olho_esquerdo: 1.0,
-				olho_direito_reteste: 1.2,
-				olho_esquerdo_reteste: 1.2,
+				olho_direito_reteste: 0.9,
+				olho_esquerdo_reteste: 0.95,
 				tem_problema_od: false,
 				tem_problema_oe: false,
 				observacoes: 'Avaliação normal',
@@ -190,8 +190,8 @@ describe('Visual Acuity Query Functions', () => {
 				ano_referencia: 2025,
 				olho_direito: 1.0,
 				olho_esquerdo: 1.0,
-				olho_direito_reteste: 1.2,
-				olho_esquerdo_reteste: 1.2,
+				olho_direito_reteste: 0.9,
+				olho_esquerdo_reteste: 0.95,
 				tem_problema_od: false,
 				tem_problema_oe: false,
 				observacoes: 'Avaliação normal'
@@ -335,35 +335,30 @@ describe('Visual Acuity Query Functions', () => {
 			expect(sql).toHaveBeenCalledTimes(1);
 		});
 
-		it('should perform UPSERT operation (update existing record)', async () => {
-			const existingData: AvaliacaoAcuidadeVisual = {
-				id: 1,
+		it('should create new evaluation on different day (allows multiple per year)', async () => {
+			const newEvaluation: AvaliacaoAcuidadeVisual = {
+				id: 2,
 				aluno_id: 123,
 				escola_id: 100,
 				profissional_id: 50,
 				usf_id: 25,
-				avaliado_em: new Date('2025-01-01'),
+				avaliado_em: new Date(),
 				ano_referencia: 2025,
-				olho_direito: 0.8,
-				olho_esquerdo: 0.9,
+				olho_direito: 0.9,
+				olho_esquerdo: 0.95,
 				olho_direito_reteste: null,
 				olho_esquerdo_reteste: null,
 				tem_problema_od: false,
 				tem_problema_oe: false,
-				observacoes: 'Primeira avaliação',
-				created_at: new Date('2025-01-01'),
-				updated_at: new Date('2025-01-01')
-			};
-
-			const updatedData: AvaliacaoAcuidadeVisual = {
-				...existingData,
-				olho_direito_reteste: 1.0,
-				olho_esquerdo_reteste: 1.1,
-				observacoes: 'Reteste realizado',
+				observacoes: 'Segunda avaliação no mesmo ano',
+				created_at: new Date(),
 				updated_at: new Date()
 			};
 
-			vi.mocked(sql).mockResolvedValue([updatedData] as any);
+			// Mock: no existing record for today, so INSERT happens
+			vi.mocked(sql)
+				.mockResolvedValueOnce([] as any) // Check returns empty (no record for today)
+				.mockResolvedValueOnce([newEvaluation] as any); // INSERT new record
 
 			const data = {
 				aluno_id: 123,
@@ -371,21 +366,119 @@ describe('Visual Acuity Query Functions', () => {
 				profissional_id: 50,
 				usf_id: 25,
 				ano_referencia: 2025,
-				olho_direito: 0.8,
-				olho_esquerdo: 0.9,
-				olho_direito_reteste: 1.0,
-				olho_esquerdo_reteste: 1.1,
+				olho_direito: 0.9,
+				olho_esquerdo: 0.95,
+				olho_direito_reteste: null,
+				olho_esquerdo_reteste: null,
 				tem_problema_od: false,
 				tem_problema_oe: false,
-				observacoes: 'Reteste realizado'
+				observacoes: 'Segunda avaliação no mesmo ano'
 			};
 
 			const result = await saveVisualAcuityEvaluation(data);
 
-			expect(result).toEqual(updatedData);
-			expect(result?.olho_direito_reteste).toBe(1.0);
-			expect(result?.olho_esquerdo_reteste).toBe(1.1);
-			expect(sql).toHaveBeenCalledTimes(1);
+			expect(result).toEqual(newEvaluation);
+			expect(result?.observacoes).toBe('Segunda avaliação no mesmo ano');
+			expect(sql).toHaveBeenCalledTimes(2); // Once for check, once for insert
+		});
+
+		it('should update existing evaluation on same day if data changes (allows corrections)', async () => {
+			const existingRecord: AvaliacaoAcuidadeVisual = {
+				id: 1,
+				aluno_id: 123,
+				escola_id: 100,
+				profissional_id: 50,
+				usf_id: 25,
+				avaliado_em: new Date(),
+				ano_referencia: 2025,
+				olho_direito: 0.8,
+				olho_esquerdo: 0.9,
+				olho_direito_reteste: null,
+				olho_esquerdo_reteste: null,
+				tem_problema_od: false,
+				tem_problema_oe: false,
+				observacoes: 'Valor incorreto',
+				created_at: new Date(),
+				updated_at: new Date()
+			};
+
+			const updatedRecord: AvaliacaoAcuidadeVisual = {
+				...existingRecord,
+				olho_direito: 1.0,
+				observacoes: 'Valor corrigido',
+				updated_at: new Date()
+			};
+
+			// First call returns existing record, second call returns updated record
+			vi.mocked(sql)
+				.mockResolvedValueOnce([existingRecord] as any) // Check for existing
+				.mockResolvedValueOnce([updatedRecord] as any); // Update
+
+			const data = {
+				aluno_id: 123,
+				escola_id: 100,
+				profissional_id: 50,
+				usf_id: 25,
+				ano_referencia: 2025,
+				olho_direito: 1.0, // Changed from 0.8
+				olho_esquerdo: 0.9,
+				olho_direito_reteste: null,
+				olho_esquerdo_reteste: null,
+				tem_problema_od: false,
+				tem_problema_oe: false,
+				observacoes: 'Valor corrigido' // Changed
+			};
+
+			const result = await saveVisualAcuityEvaluation(data);
+
+			expect(result).toEqual(updatedRecord);
+			expect(result?.olho_direito).toBe(1.0);
+			expect(result?.observacoes).toBe('Valor corrigido');
+			expect(sql).toHaveBeenCalledTimes(2); // Once for check, once for update
+		});
+
+		it('should return existing record without update if no data changes on same day', async () => {
+			const existingRecord: AvaliacaoAcuidadeVisual = {
+				id: 1,
+				aluno_id: 123,
+				escola_id: 100,
+				profissional_id: 50,
+				usf_id: 25,
+				avaliado_em: new Date(),
+				ano_referencia: 2025,
+				olho_direito: 0.8,
+				olho_esquerdo: 0.9,
+				olho_direito_reteste: null,
+				olho_esquerdo_reteste: null,
+				tem_problema_od: false,
+				tem_problema_oe: false,
+				observacoes: 'Dados corretos',
+				created_at: new Date(),
+				updated_at: new Date()
+			};
+
+			// Only one call - check for existing record
+			vi.mocked(sql).mockResolvedValueOnce([existingRecord] as any);
+
+			const data = {
+				aluno_id: 123,
+				escola_id: 100,
+				profissional_id: 50,
+				usf_id: 25,
+				ano_referencia: 2025,
+				olho_direito: 0.8, // Same as existing
+				olho_esquerdo: 0.9, // Same as existing
+				olho_direito_reteste: null,
+				olho_esquerdo_reteste: null,
+				tem_problema_od: false,
+				tem_problema_oe: false,
+				observacoes: 'Dados corretos' // Same as existing
+			};
+
+			const result = await saveVisualAcuityEvaluation(data);
+
+			expect(result).toEqual(existingRecord);
+			expect(sql).toHaveBeenCalledTimes(1); // Only check, no update needed
 		});
 	});
 

@@ -187,7 +187,7 @@ export const actions: Actions = {
 							? olhoEsquerdo < 0.7
 							: null;
 
-				await saveVisualAcuityEvaluation({
+				const visualResult = await saveVisualAcuityEvaluation({
 					aluno_id: alunoId,
 					escola_id: enrollment.escola_id,
 					profissional_id: profissional_id ?? null,
@@ -201,6 +201,11 @@ export const actions: Actions = {
 					tem_problema_oe: temProblemaOE,
 					observacoes: observacoesVisual
 				});
+
+				if (!visualResult) {
+					console.error('Failed to save visual acuity data');
+					return fail(500, { error: 'Falha ao salvar dados de acuidade visual' });
+				}
 			}
 
 			// TODO: Save Dental data when Story 2.6 is implemented

@@ -42,8 +42,14 @@
 	$effect(() => {
 		const currentStudentId = data.student.id;
 
+		console.log('🔄 Effect triggered - Student:', data.student.cliente, 'ID:', currentStudentId);
+		console.log('📊 Visual Acuity from server:', data.visualAcuity);
+		console.log('📏 Anthropometry from server:', data.anthropometry);
+
 		// Only reset if student actually changed
 		if (previousStudentId !== null && previousStudentId !== currentStudentId) {
+			console.log('🔀 Student changed from', previousStudentId, 'to', currentStudentId);
+
 			// Load data for new student
 			anthropometryData.pesoKg = data.anthropometry?.peso_kg ?? null;
 			anthropometryData.alturaCm = data.anthropometry?.altura_cm ?? null;
@@ -55,10 +61,14 @@
 			visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
 			visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
 
+			console.log('✅ Loaded visual acuity:', visualAcuityData);
+
 			// Reset ausente checkbox
 			alunoAusente = false;
 			// PRESERVE active tab - do NOT reset to 'antropometria'
 		} else {
+			console.log('🆕 First load for student', currentStudentId);
+
 			// First load - initialize data
 			anthropometryData.pesoKg = data.anthropometry?.peso_kg ?? null;
 			anthropometryData.alturaCm = data.anthropometry?.altura_cm ?? null;
@@ -69,6 +79,8 @@
 			visualAcuityData.olhoDireitoReteste = data.visualAcuity?.olho_direito_reteste ?? null;
 			visualAcuityData.olhoEsquerdoReteste = data.visualAcuity?.olho_esquerdo_reteste ?? null;
 			visualAcuityData.observacoes = data.visualAcuity?.observacoes ?? '';
+
+			console.log('✅ Loaded visual acuity (first):', visualAcuityData);
 		}
 
 		previousStudentId = currentStudentId;

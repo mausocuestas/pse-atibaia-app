@@ -70,14 +70,14 @@
 				if (!validateAcuityValue(olhoDireito, 'Olho Direito', 'olho-direito')) {
 					olhoDireito = null;
 				} else if (olhoDireito !== null) {
-					olhoDireito = Math.round(olhoDireito * 100) / 100;
+					olhoDireito = Math.round(olhoDireito * 10) / 10;
 				}
 				break;
 			case 'oe':
 				if (!validateAcuityValue(olhoEsquerdo, 'Olho Esquerdo', 'olho-esquerdo')) {
 					olhoEsquerdo = null;
 				} else if (olhoEsquerdo !== null) {
-					olhoEsquerdo = Math.round(olhoEsquerdo * 100) / 100;
+					olhoEsquerdo = Math.round(olhoEsquerdo * 10) / 10;
 				}
 				break;
 			case 'od_reteste':
@@ -86,7 +86,7 @@
 				) {
 					olhoDireitoReteste = null;
 				} else if (olhoDireitoReteste !== null) {
-					olhoDireitoReteste = Math.round(olhoDireitoReteste * 100) / 100;
+					olhoDireitoReteste = Math.round(olhoDireitoReteste * 10) / 10;
 				}
 				break;
 			case 'oe_reteste':
@@ -95,7 +95,7 @@
 				) {
 					olhoEsquerdoReteste = null;
 				} else if (olhoEsquerdoReteste !== null) {
-					olhoEsquerdoReteste = Math.round(olhoEsquerdoReteste * 100) / 100;
+					olhoEsquerdoReteste = Math.round(olhoEsquerdoReteste * 10) / 10;
 				}
 				break;
 		}
@@ -118,7 +118,7 @@
 					id="olho-direito"
 					name="olho_direito"
 					type="number"
-					step="0.01"
+					step="0.1"
 					min="0"
 					max="1.0"
 					bind:value={olhoDireito}
@@ -142,7 +142,7 @@
 					id="olho-esquerdo"
 					name="olho_esquerdo"
 					type="number"
-					step="0.01"
+					step="0.1"
 					min="0"
 					max="1.0"
 					bind:value={olhoEsquerdo}
@@ -203,7 +203,7 @@
 					id="olho-direito-reteste"
 					name="olho_direito_reteste"
 					type="number"
-					step="0.01"
+					step="0.1"
 					min="0"
 					max="1.0"
 					bind:value={olhoDireitoReteste}
@@ -227,7 +227,7 @@
 					id="olho-esquerdo-reteste"
 					name="olho_esquerdo_reteste"
 					type="number"
-					step="0.01"
+					step="0.1"
 					min="0"
 					max="1.0"
 					bind:value={olhoEsquerdoReteste}
