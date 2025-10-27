@@ -37,6 +37,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 					token.avaliador_id = authorizedUser.avaliador_id;
 					token.usf_id = authorizedUser.usf_id;
 					token.nome_profissional = authorizedUser.nome_profissional;
+					token.is_gestor = authorizedUser.is_gestor;
 				}
 			}
 
@@ -49,6 +50,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 				(session.user as any).avaliador_id = token.avaliador_id as number;
 				(session.user as any).usf_id = token.usf_id as number;
 				(session.user as any).nome_profissional = token.nome_profissional as string;
+				(session.user as any).is_gestor = token.is_gestor as boolean;
 			}
 
 			return session;

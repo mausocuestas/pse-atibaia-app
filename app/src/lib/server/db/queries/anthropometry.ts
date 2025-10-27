@@ -28,7 +28,8 @@ export type AnthropometryEvaluationInput = z.infer<typeof anthropometryEvaluatio
 
 /**
  * Save or update anthropometry evaluation for a student
- * Uses UPSERT logic based on aluno_id and ano_referencia (unique constraint)
+ * Creates a new evaluation record (allows multiple evaluations per year for each semester)
+ * Updates if evaluation already exists for today
  *
  * @param data - Anthropometry evaluation data
  * @returns Saved evaluation record or null on error
@@ -40,34 +41,72 @@ export async function saveAnthropometryEvaluation(
 		// Validate input
 		const validated = anthropometryEvaluationSchema.parse(data);
 
-		// Upsert query - insert or update if record exists
-		const result = await sql<AvaliacaoAntropometrica[]>`
-      INSERT INTO pse.avaliacoes_antropometricas (
-        aluno_id, escola_id, profissional_id, usf_id,
-        avaliado_em, ano_referencia, peso_kg, altura_cm,
-        data_nascimento, sexo, imc, classificacao_cdc, observacoes
-      )
-      VALUES (
-        ${validated.aluno_id}, ${validated.escola_id},
-        ${validated.profissional_id}, ${validated.usf_id},
-        CURRENT_DATE, ${validated.ano_referencia},
-        ${validated.peso_kg}, ${validated.altura_cm},
-        ${validated.data_nascimento}, ${validated.sexo},
-        ${validated.imc}, ${validated.classificacao_cdc},
-        ${validated.observacoes}
-      )
-      ON CONFLICT (aluno_id, ano_referencia)
-      DO UPDATE SET
-        peso_kg = EXCLUDED.peso_kg,
-        altura_cm = EXCLUDED.altura_cm,
-        imc = EXCLUDED.imc,
-        classificacao_cdc = EXCLUDED.classificacao_cdc,
-        observacoes = EXCLUDED.observacoes,
-        avaliado_em = CURRENT_DATE,
-        updated_at = CURRENT_TIMESTAMP
-      RETURNING *
-    `;
+		// Check if evaluation already exists for today
+		const existing = await sql<AvaliacaoAntropometrica[]>`
+			SELECT * FROM pse.avaliacoes_antropometricas
+			WHERE aluno_id = ${validated.aluno_id}
+			AND ano_referencia = ${validated.ano_referencia}
+			AND avaliado_em = CURRENT_DATE
+			LIMIT 1
+		`;
 
+		if (existing.length > 0) {
+			const existingRecord = existing[0];
+
+			// Check if any field has changed
+			const hasChanges =
+				Number(existingRecord.peso_kg) !== validated.peso_kg ||
+				Number(existingRecord.altura_cm) !== validated.altura_cm ||
+				Number(existingRecord.imc) !== validated.imc ||
+				existingRecord.classificacao_cdc !== validated.classificacao_cdc ||
+				existingRecord.observacoes !== validated.observacoes;
+
+			if (hasChanges) {
+				// Update existing evaluation for today (allows corrections)
+				const result = await sql<AvaliacaoAntropometrica[]>`
+					UPDATE pse.avaliacoes_antropometricas
+					SET
+						peso_kg = ${validated.peso_kg},
+						altura_cm = ${validated.altura_cm},
+						imc = ${validated.imc},
+						classificacao_cdc = ${validated.classificacao_cdc},
+						observacoes = ${validated.observacoes},
+						data_nascimento = ${validated.data_nascimento},
+						sexo = ${validated.sexo},
+						updated_at = CURRENT_TIMESTAMP
+					WHERE id = ${existingRecord.id}
+					RETURNING *
+				`;
+
+				console.log('✏️ Updated existing anthropometry evaluation for today');
+				return result.length > 0 ? result[0] : null;
+			} else {
+				// No changes detected, return existing record
+				console.log('ℹ️ No changes detected, returning existing record');
+				return existingRecord;
+			}
+		}
+
+		// Insert new evaluation record (allows multiple per year)
+		const result = await sql<AvaliacaoAntropometrica[]>`
+			INSERT INTO pse.avaliacoes_antropometricas (
+				aluno_id, escola_id, profissional_id, usf_id,
+				avaliado_em, ano_referencia, peso_kg, altura_cm,
+				data_nascimento, sexo, imc, classificacao_cdc, observacoes
+			)
+			VALUES (
+				${validated.aluno_id}, ${validated.escola_id},
+				${validated.profissional_id}, ${validated.usf_id},
+				CURRENT_DATE, ${validated.ano_referencia},
+				${validated.peso_kg}, ${validated.altura_cm},
+				${validated.data_nascimento}, ${validated.sexo},
+				${validated.imc}, ${validated.classificacao_cdc},
+				${validated.observacoes}
+			)
+			RETURNING *
+		`;
+
+		console.log('✅ Created new anthropometry evaluation');
 		return result.length > 0 ? result[0] : null;
 	} catch (error) {
 		console.error('saveAnthropometryEvaluation error:', error);

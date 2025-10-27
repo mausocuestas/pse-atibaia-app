@@ -11,6 +11,7 @@ export interface AuthorizedUser {
 	usf_id: number;
 	nome_profissional: string;
 	conta_google: string;
+	is_gestor: boolean;
 }
 
 const emailSchema = z.string().email();
@@ -30,7 +31,8 @@ export async function getAuthorizedUser(email: string): Promise<AuthorizedUser |
 				p.nome_profissional,
 				p.conta_google,
 				a.id as avaliador_id,
-				a.usf_id
+				a.usf_id,
+				a.is_gestor
 			FROM shared.profissionais p
 			INNER JOIN pse.avaliadores a ON p.id = a.profissional_id
 			WHERE p.conta_google = ${email}

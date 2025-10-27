@@ -20,7 +20,8 @@ describe('getAuthorizedUser', () => {
 				avaliador_id: 10,
 				usf_id: 5,
 				nome_profissional: 'João Silva',
-				conta_google: 'joao@example.com'
+				conta_google: 'joao@example.com',
+				is_gestor: false
 			}
 		];
 

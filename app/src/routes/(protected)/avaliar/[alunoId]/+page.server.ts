@@ -118,13 +118,21 @@ export const actions: Actions = {
 
 		try {
 			// Save Anthropometry data if present
-			if (formData.has('peso_kg') || formData.has('altura_cm')) {
-				const pesoKg = Number(formData.get('peso_kg'));
-				const alturaCm = Number(formData.get('altura_cm'));
+			if (formData.has('peso_kg') && formData.has('altura_cm')) {
+				const pesoRaw = formData.get('peso_kg')?.toString().trim();
+				const alturaRaw = formData.get('altura_cm')?.toString().trim();
+
+				console.log('🔍 Anthropometry raw data:', { pesoRaw, alturaRaw });
+
+				const pesoKg = pesoRaw && pesoRaw !== '' ? Number(pesoRaw) : 0;
+				const alturaCm = alturaRaw && alturaRaw !== '' ? Number(alturaRaw) : 0;
 				const observacoesAntro = formData.get('observacoes_antropometria')?.toString() || null;
 
+				console.log('🔍 Anthropometry parsed:', { pesoKg, alturaCm, isValidPeso: pesoKg > 0, isValidAltura: alturaCm > 0 });
+
 				// Validate peso and altura
-				if (pesoKg > 0 && alturaCm > 0) {
+				if (pesoKg > 0 && alturaCm > 0 && !isNaN(pesoKg) && !isNaN(alturaCm)) {
+					console.log('✅ Validation passed, saving to database...');
 					if (pesoKg > 300) {
 						return fail(400, { error: 'Peso inválido. Deve ser entre 0 e 300 kg.' });
 					}
@@ -138,7 +146,7 @@ export const actions: Actions = {
 					const classificacaoCDC = calculateCDCClassification(imc, age, student.sexo ?? 'M');
 
 					// Save to database
-					await saveAnthropometryEvaluation({
+					const savedId = await saveAnthropometryEvaluation({
 						aluno_id: alunoId,
 						escola_id: enrollment.escola_id,
 						profissional_id: profissional_id ?? null,
@@ -152,6 +160,9 @@ export const actions: Actions = {
 						classificacao_cdc: classificacaoCDC,
 						observacoes: observacoesAntro
 					});
+					console.log('💾 Anthropometry saved with ID:', savedId);
+				} else {
+					console.log('⚠️ Validation failed: pesoKg or alturaCm is invalid', { pesoKg, alturaCm });
 				}
 			}
 

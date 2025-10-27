@@ -254,6 +254,8 @@
 	async function handleSave() {
 		isSaving = true;
 
+		console.log('🚀 Starting save process...', { anthropometryData, visualAcuityData, dentalData });
+
 		const formData = new FormData();
 
 		// Add anthropometry data if present
@@ -261,6 +263,10 @@
 			formData.append('peso_kg', String(anthropometryData.pesoKg ?? ''));
 			formData.append('altura_cm', String(anthropometryData.alturaCm ?? ''));
 			formData.append('observacoes_antropometria', anthropometryData.observacoes ?? '');
+			console.log('📤 Sending anthropometry:', {
+				peso: anthropometryData.pesoKg,
+				altura: anthropometryData.alturaCm
+			});
 		}
 
 		// Add visual acuity data if present
