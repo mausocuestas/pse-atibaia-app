@@ -79,16 +79,78 @@
 		schoolOptions.find((s) => s.value === filters.escolaId)?.label ?? 'Todas as escolas'
 	);
 
-	// Period options (matching database values)
-	const periodOptions = [
+	// Dynamic period options based on selected school
+	let availablePeriods = $state<string[]>([]);
+	let loadingPeriods = $state(false);
+
+	// All possible period options (fallback when no school selected)
+	const allPeriodOptions = [
 		{ value: 'MANHA', label: 'Manhã' },
 		{ value: 'TARDE', label: 'Tarde' },
 		{ value: 'INTEGRAL', label: 'Integral' },
 		{ value: 'NOITE', label: 'Noite' }
 	];
+
+	// Period options derived from available periods or all options
+	const periodOptions = $derived(
+		availablePeriods.length > 0
+			? availablePeriods.map((p) => ({
+					value: p,
+					label:
+						p === 'MANHA'
+							? 'Manhã'
+							: p === 'TARDE'
+								? 'Tarde'
+								: p === 'INTEGRAL'
+									? 'Integral'
+									: p === 'NOITE'
+										? 'Noite'
+										: p
+				}))
+			: allPeriodOptions
+	);
+
 	const periodTriggerContent = $derived(
 		periodOptions.find((p) => p.value === filters.periodo)?.label ?? 'Todos os períodos'
 	);
+
+	// Fetch periods when school changes
+	async function fetchPeriodsForSchool(escolaId: string) {
+		if (!escolaId) {
+			availablePeriods = [];
+			return;
+		}
+
+		loadingPeriods = true;
+		try {
+			const response = await fetch(
+				`/api/escolas/${escolaId}/periodos?anoLetivo=${filters.anoLetivo}`
+			);
+			if (response.ok) {
+				const data = await response.json();
+				availablePeriods = data.periods || [];
+
+				// Reset period filter if current selection not available
+				if (filters.periodo && !availablePeriods.includes(filters.periodo)) {
+					filters.periodo = '';
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching periods:', error);
+			availablePeriods = [];
+		} finally {
+			loadingPeriods = false;
+		}
+	}
+
+	// Watch for school changes
+	$effect(() => {
+		if (filters.escolaId) {
+			fetchPeriodsForSchool(filters.escolaId);
+		} else {
+			availablePeriods = [];
+		}
+	});
 
 	// Visual acuity range options
 	const visualAcuityRangeOptions = [
@@ -284,9 +346,13 @@
 					<!-- Period Filter -->
 					<div class="space-y-2">
 						<Label for="period">Período</Label>
-						<Select.Root type="single" bind:value={filters.periodo}>
+						<Select.Root type="single" bind:value={filters.periodo} disabled={loadingPeriods}>
 							<Select.Trigger id="period" class="w-full">
-								{periodTriggerContent}
+								{#if loadingPeriods}
+									Carregando...
+								{:else}
+									{periodTriggerContent}
+								{/if}
 							</Select.Trigger>
 							<Select.Content>
 								<Select.Item value="">Todos os períodos</Select.Item>
@@ -297,6 +363,9 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
+						{#if filters.escolaId && availablePeriods.length === 0 && !loadingPeriods}
+							<p class="text-xs text-gray-500">Nenhum período disponível para esta escola</p>
+						{/if}
 					</div>
 				</div>
 
