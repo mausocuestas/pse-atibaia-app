@@ -125,12 +125,14 @@
 			const searchParams = new URLSearchParams(window.location.search);
 			const payload: Record<string, any> = {};
 
-			// Get filters from URL params
+			// Always include anoLetivo (from URL or current filter state)
+			payload.anoLetivo = searchParams.has('anoLetivo')
+				? parseInt(searchParams.get('anoLetivo')!)
+				: filters.anoLetivo;
+
+			// Get other filters from URL params
 			if (searchParams.has('escolaId')) {
 				payload.escolaId = parseInt(searchParams.get('escolaId')!);
-			}
-			if (searchParams.has('anoLetivo')) {
-				payload.anoLetivo = parseInt(searchParams.get('anoLetivo')!);
 			}
 			if (searchParams.has('turma')) {
 				payload.turma = searchParams.get('turma');

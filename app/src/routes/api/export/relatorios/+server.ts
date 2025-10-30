@@ -54,7 +54,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 
 		if (results.length === 0) {
-			return error(404, 'Nenhum resultado encontrado com os filtros aplicados');
+			return error(400, 'Nenhum resultado encontrado com os filtros aplicados. Verifique os critérios de busca.');
 		}
 
 		// Prepare data for Excel with Brazilian formatting
