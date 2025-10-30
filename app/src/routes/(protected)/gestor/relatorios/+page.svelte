@@ -36,33 +36,40 @@
 		dentalRisks: Record<string, boolean>;
 	}
 
-	let filters = $state<FilterState>({
-		escolaId: '',
-		anoLetivo: data.currentYear,
-		periodo: '',
-		visualAcuityRange: '',
-		evaluationTypes: {
-			anthropometric: false,
-			visual: false,
-			dental: false
-		},
-		cdcClassifications: {
-			'Abaixo do Peso': false,
-			'Peso Normal': false,
-			Sobrepeso: false,
-			Obesidade: false,
-			'Obesidade Grave': false
-		},
-		dentalRisks: {
-			A: false,
-			B: false,
-			C: false,
-			D: false,
-			E: false,
-			F: false,
-			G: false
-		}
-	});
+	// Initialize filters from URL params or defaults
+	function initializeFilters(): FilterState {
+		const params = new URLSearchParams(window.location.search);
+		return {
+			escolaId: params.get('escolaId') || '',
+			anoLetivo: params.get('anoLetivo') ? parseInt(params.get('anoLetivo')!) : data.currentYear,
+			turma: params.get('turma') || undefined,
+			periodo: params.get('periodo') || '',
+			visualAcuityRange: '',
+			evaluationTypes: {
+				anthropometric: false,
+				visual: false,
+				dental: false
+			},
+			cdcClassifications: {
+				'Abaixo do Peso': false,
+				'Peso Normal': false,
+				Sobrepeso: false,
+				Obesidade: false,
+				'Obesidade Grave': false
+			},
+			dentalRisks: {
+				A: false,
+				B: false,
+				C: false,
+				D: false,
+				E: false,
+				F: false,
+				G: false
+			}
+		};
+	}
+
+	let filters = $state<FilterState>(initializeFilters());
 
 	// School options
 	const schoolOptions = $derived(

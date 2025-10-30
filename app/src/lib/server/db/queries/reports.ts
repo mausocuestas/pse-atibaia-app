@@ -128,12 +128,30 @@ export async function getFilteredStudents(
 		}
 
 		if (filters.visualAcuityRange) {
+			// Ensure visual acuity data exists first
+			additionalConditions = sql`${additionalConditions} AND av.id IS NOT NULL`;
+
 			if (filters.visualAcuityRange === '<= 0.6') {
-				additionalConditions = sql`${additionalConditions} AND (av.olho_direito <= 0.6 OR av.olho_esquerdo <= 0.6)`;
+				// At least one eye <= 0.6 (and not null)
+				additionalConditions = sql`${additionalConditions} AND (
+					(av.olho_direito IS NOT NULL AND av.olho_direito <= 0.6)
+					OR
+					(av.olho_esquerdo IS NOT NULL AND av.olho_esquerdo <= 0.6)
+				)`;
 			} else if (filters.visualAcuityRange === '0.61-0.9') {
-				additionalConditions = sql`${additionalConditions} AND ((av.olho_direito > 0.6 AND av.olho_direito < 1.0) OR (av.olho_esquerdo > 0.6 AND av.olho_esquerdo < 1.0))`;
+				// At least one eye in range 0.61-0.9
+				additionalConditions = sql`${additionalConditions} AND (
+					(av.olho_direito IS NOT NULL AND av.olho_direito > 0.6 AND av.olho_direito < 1.0)
+					OR
+					(av.olho_esquerdo IS NOT NULL AND av.olho_esquerdo > 0.6 AND av.olho_esquerdo < 1.0)
+				)`;
 			} else if (filters.visualAcuityRange === '>= 1.0') {
-				additionalConditions = sql`${additionalConditions} AND (av.olho_direito >= 1.0 AND av.olho_esquerdo >= 1.0)`;
+				// Both eyes >= 1.0 (or one eye if other is null)
+				additionalConditions = sql`${additionalConditions} AND (
+					(av.olho_direito IS NOT NULL AND av.olho_direito >= 1.0)
+					OR
+					(av.olho_esquerdo IS NOT NULL AND av.olho_esquerdo >= 1.0)
+				)`;
 			}
 		}
 
