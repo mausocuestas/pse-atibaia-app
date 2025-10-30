@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { sql } from '$lib/server/db';
+import { sql } from '$lib/server/db/client';
 import { getFilteredStudents, type ReportFilters } from '$lib/server/db/queries/reports';
 
 /**
