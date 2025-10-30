@@ -76,6 +76,7 @@
 			if (params.has('anoLetivo')) filters.anoLetivo = parseInt(params.get('anoLetivo')!) || data.currentYear;
 			if (params.has('turma')) filters.turma = params.get('turma') || undefined;
 			if (params.has('periodo')) filters.periodo = params.get('periodo') || '';
+			if (params.has('visualAcuityRange')) filters.visualAcuityRange = params.get('visualAcuityRange') || '';
 		}
 	});
 
@@ -179,6 +180,10 @@
 		params.set('anoLetivo', filters.anoLetivo.toString());
 		if (filters.turma) params.set('turma', filters.turma);
 		if (filters.periodo) params.set('periodo', filters.periodo);
+
+		// Add visual acuity range filter
+		if (filters.visualAcuityRange) params.set('visualAcuityRange', filters.visualAcuityRange);
+
 		params.set('page', '1'); // Reset to first page
 
 		// Navigate with filters
@@ -216,6 +221,9 @@
 			}
 			if (searchParams.has('periodo')) {
 				payload.periodo = searchParams.get('periodo');
+			}
+			if (searchParams.has('visualAcuityRange')) {
+				payload.visualAcuityRange = searchParams.get('visualAcuityRange');
 			}
 
 			// Add evaluation types and health risk filters if active
