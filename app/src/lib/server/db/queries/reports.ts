@@ -128,8 +128,9 @@ export async function getFilteredStudents(
 		}
 
 		if (filters.visualAcuityRange) {
-			// Ensure visual acuity data exists first
+			// Ensure visual acuity evaluation exists AND has at least one eye with data
 			additionalConditions = sql`${additionalConditions} AND av.id IS NOT NULL`;
+			additionalConditions = sql`${additionalConditions} AND (av.olho_direito IS NOT NULL OR av.olho_esquerdo IS NOT NULL)`;
 
 			if (filters.visualAcuityRange === '<= 0.6') {
 				// At least one eye <= 0.6 (and not null)
@@ -146,7 +147,7 @@ export async function getFilteredStudents(
 					(av.olho_esquerdo IS NOT NULL AND av.olho_esquerdo > 0.6 AND av.olho_esquerdo < 1.0)
 				)`;
 			} else if (filters.visualAcuityRange === '>= 1.0') {
-				// Both eyes >= 1.0 (or one eye if other is null)
+				// At least one eye >= 1.0 (and not null)
 				additionalConditions = sql`${additionalConditions} AND (
 					(av.olho_direito IS NOT NULL AND av.olho_direito >= 1.0)
 					OR
