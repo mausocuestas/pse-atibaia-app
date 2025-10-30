@@ -36,40 +36,48 @@
 		dentalRisks: Record<string, boolean>;
 	}
 
-	// Initialize filters from URL params or defaults
-	function initializeFilters(): FilterState {
-		const params = new URLSearchParams(window.location.search);
-		return {
-			escolaId: params.get('escolaId') || '',
-			anoLetivo: params.get('anoLetivo') ? parseInt(params.get('anoLetivo')!) : data.currentYear,
-			turma: params.get('turma') || undefined,
-			periodo: params.get('periodo') || '',
-			visualAcuityRange: '',
-			evaluationTypes: {
-				anthropometric: false,
-				visual: false,
-				dental: false
-			},
-			cdcClassifications: {
-				'Abaixo do Peso': false,
-				'Peso Normal': false,
-				Sobrepeso: false,
-				Obesidade: false,
-				'Obesidade Grave': false
-			},
-			dentalRisks: {
-				A: false,
-				B: false,
-				C: false,
-				D: false,
-				E: false,
-				F: false,
-				G: false
-			}
-		};
-	}
+	// Initialize filters from page data (server-loaded URL params)
+	let filters = $state<FilterState>({
+		escolaId: data.results.length > 0 && data.results[0]?.escola_id
+			? data.results[0].escola_id.toString()
+			: '',
+		anoLetivo: data.currentYear,
+		turma: undefined,
+		periodo: '',
+		visualAcuityRange: '',
+		evaluationTypes: {
+			anthropometric: false,
+			visual: false,
+			dental: false
+		},
+		cdcClassifications: {
+			'Abaixo do Peso': false,
+			'Peso Normal': false,
+			Sobrepeso: false,
+			Obesidade: false,
+			'Obesidade Grave': false
+		},
+		dentalRisks: {
+			A: false,
+			B: false,
+			C: false,
+			D: false,
+			E: false,
+			F: false,
+			G: false
+		}
+	});
 
-	let filters = $state<FilterState>(initializeFilters());
+	// Sync filters from URL on client-side mount
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const params = new URLSearchParams(window.location.search);
+			if (params.has('escolaId')) filters.escolaId = params.get('escolaId') || '';
+			if (params.has('anoLetivo')) filters.anoLetivo = parseInt(params.get('anoLetivo')!) || data.currentYear;
+			if (params.has('turma')) filters.turma = params.get('turma') || undefined;
+			if (params.has('periodo')) filters.periodo = params.get('periodo') || '';
+		}
+	});
 
 	// School options
 	const schoolOptions = $derived(
