@@ -54,7 +54,7 @@ const reportFiltersSchema = z.object({
 	cdcClassification: z.array(z.string()).optional(),
 	visualAcuityRange: z.string().optional(),
 	dentalRisk: z.array(z.string()).optional(),
-	limit: z.number().min(1).max(1000).optional(),
+	limit: z.number().min(1).max(50000).optional(), // Increased for exports
 	offset: z.number().min(0).optional()
 });
 
