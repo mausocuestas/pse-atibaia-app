@@ -9,6 +9,7 @@ declare module '@auth/core/types' {
 			nome_profissional: string;
 			name: string;
 			email: string;
+			is_gestor?: boolean;
 		} & DefaultSession['user'];
 	}
 
@@ -17,6 +18,7 @@ declare module '@auth/core/types' {
 		avaliador_id?: number;
 		usf_id?: number;
 		nome_profissional?: string;
+		is_gestor?: boolean;
 	}
 }
 
@@ -26,6 +28,7 @@ declare module '@auth/core/jwt' {
 		avaliador_id?: number;
 		usf_id?: number;
 		nome_profissional?: string;
+		is_gestor?: boolean;
 	}
 }
 

@@ -14,6 +14,8 @@
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import HelpCircleIcon from '@lucide/svelte/icons/help-circle';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -30,6 +32,23 @@
 	let { session, children }: Props = $props();
 
 	const user = session.user as any;
+	const isGestor = user?.is_gestor || false;
+
+	// State for collapsible menu
+	let gestorMenuOpen = $state(true);
+
+	const gestorItems = [
+		{
+			title: 'Dashboard',
+			url: '/gestor/dashboard',
+			icon: LayoutDashboardIcon
+		},
+		{
+			title: 'Relatórios',
+			url: '/gestor/relatorios',
+			icon: FileTextIcon
+		}
+	];
 
 	const navItems = [
 		{
@@ -127,6 +146,43 @@
 		</Sidebar.Header>
 
 		<Sidebar.Content>
+			<!-- Gestor Section (only visible for managers) -->
+			{#if isGestor}
+				<Sidebar.Group>
+					<Sidebar.GroupLabel>
+						<button
+							class="flex w-full items-center justify-between text-left"
+							onclick={() => (gestorMenuOpen = !gestorMenuOpen)}
+						>
+							<span>Gestor</span>
+							<ChevronRightIcon
+								class="h-4 w-4 transition-transform duration-200 {gestorMenuOpen
+									? 'rotate-90'
+									: ''}"
+							/>
+						</button>
+					</Sidebar.GroupLabel>
+					{#if gestorMenuOpen}
+						<Sidebar.GroupContent>
+							<Sidebar.Menu>
+								{#each gestorItems as item}
+									<Sidebar.MenuItem>
+										<Sidebar.MenuButton tooltipContent={item.title}>
+											{#snippet child({ props })}
+												<a href={item.url} {...props}>
+													<item.icon />
+													<span>{item.title}</span>
+												</a>
+											{/snippet}
+										</Sidebar.MenuButton>
+									</Sidebar.MenuItem>
+								{/each}
+							</Sidebar.Menu>
+						</Sidebar.GroupContent>
+					{/if}
+				</Sidebar.Group>
+			{/if}
+
 			<Sidebar.Group>
 				<Sidebar.GroupLabel>Navegação</Sidebar.GroupLabel>
 				<Sidebar.Menu>
