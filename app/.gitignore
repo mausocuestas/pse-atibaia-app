@@ -21,3 +21,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Scripts with credentials (development only)
+scripts/*.cjs
+scripts/*.ts
