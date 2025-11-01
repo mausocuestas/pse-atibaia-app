@@ -17,6 +17,7 @@
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
+	import UploadIcon from '@lucide/svelte/icons/upload';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -53,6 +54,11 @@
 			title: 'Relatórios',
 			url: '/gestor/relatorios',
 			icon: FileTextIcon
+		},
+		{
+			title: 'Importação de Matrículas',
+			url: '/admin/importacao-matriculas',
+			icon: UploadIcon
 		}
 	];
 
