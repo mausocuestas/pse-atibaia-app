@@ -163,10 +163,13 @@ export const actions: Actions = {
 				}
 
 				// Database or other errors
+				// Log full error details server-side for debugging
+				console.error('Import error:', err);
+
 				return fail(500, {
 					status: 'error',
 					message: 'Erro durante a importação',
-					errors: [`Erro interno: ${err.message}`]
+					errors: ['Ocorreu um erro interno. Por favor, contate o suporte técnico.']
 				});
 			}
 

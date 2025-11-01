@@ -1,19 +1,22 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock the database BEFORE importing the module
+vi.mock('$lib/server/db', () => ({
+	sql: vi.fn()
+}));
+
 import {
 	findOrCreateStudent,
 	findOrCreateSchool,
-	findOrCreateClass,
+	normalizeClassData,
 	createMatricula,
 	getSchoolByINEP,
 	getAllSchools,
 	getStudentById
 } from './matricula-import';
+import { sql } from '$lib/server/db';
 
-// Mock the database inline
-const mockSql = vi.fn();
-vi.mock('$lib/server/db', () => ({
-	sql: mockSql
-}));
+const mockSql = sql as unknown as ReturnType<typeof vi.fn>;
 
 describe('Matricula Import Queries', () => {
 	beforeEach(() => {
@@ -56,16 +59,19 @@ describe('Matricula Import Queries', () => {
 		});
 
 		it('should create new student when not found', async () => {
-			const mockTransaction = vi.fn();
-			mockTransaction
-				.mockResolvedValueOnce([]) // CPF not found
-				.mockResolvedValueOnce([]) // NIS not found
-				.mockResolvedValueOnce([]) // Name+DOB not found
-				.mockResolvedValueOnce([{ id: 789 }]); // New student created
+			// Create a mock function that acts as a tagged template
+			const mockTransaction = Object.assign(
+				vi.fn()
+					.mockResolvedValueOnce([]) // Name+DOB not found
+					.mockResolvedValueOnce([{ id: 789 }]), // New student created
+				{ [Symbol.for('postgres.client')]: true } // Mark as postgres client
+			);
 
 			const studentData = {
 				nomeCompleto: 'Novo Aluno',
-				dataNascimento: '10/05/2012'
+				dataNascimento: '10/05/2012',
+				sexo: 'Masculino'
+				// No CPF/NIS provided
 			};
 
 			const result = await findOrCreateStudent(studentData, mockTransaction);
@@ -101,10 +107,11 @@ describe('Matricula Import Queries', () => {
 		});
 
 		it('should find existing school by name', async () => {
-			const mockTransaction = vi.fn();
-			mockTransaction
-				.mockResolvedValueOnce([]) // INEP not found
-				.mockResolvedValueOnce([{ inep: 87654321 }]); // Name found
+			const mockTransaction = Object.assign(
+				vi.fn()
+					.mockResolvedValueOnce([{ inep: 87654321 }]), // Name found (no INEP provided)
+				{ [Symbol.for('postgres.client')]: true }
+			);
 
 			const schoolData = {
 				escola: 'Escola Existente'
@@ -117,11 +124,13 @@ describe('Matricula Import Queries', () => {
 		});
 
 		it('should create new school when not found', async () => {
-			const mockTransaction = vi.fn();
-			mockTransaction
-				.mockResolvedValueOnce([]) // INEP not found
-				.mockResolvedValueOnce([]) // Name not found
-				.mockResolvedValueOnce([{ inep: 99999999 }]); // New school created
+			const mockTransaction = Object.assign(
+				vi.fn()
+					.mockResolvedValueOnce([]) // Name not found
+					.mockResolvedValueOnce([{ max_inep: 35000000 }]) // generateNextINEP query
+					.mockResolvedValueOnce([{ inep: 35000001 }]), // New school created
+				{ [Symbol.for('postgres.client')]: true }
+			);
 
 			const schoolData = {
 				escola: 'Nova Escola'
@@ -129,7 +138,7 @@ describe('Matricula Import Queries', () => {
 
 			const result = await findOrCreateSchool(schoolData, mockTransaction);
 
-			expect(result.id).toBe(99999999);
+			expect(result.id).toBe(35000001);
 			expect(result.isNew).toBe(true);
 		});
 
@@ -140,60 +149,45 @@ describe('Matricula Import Queries', () => {
 		});
 	});
 
-	describe('findOrCreateClass', () => {
-		it('should find existing class', async () => {
-			const mockTransaction = vi.fn();
-			mockTransaction.mockResolvedValue([{ id: 111 }]);
-
+	describe('normalizeClassData', () => {
+		it('should normalize valid class data', () => {
 			const classData = {
 				turma: 'Turma A',
-				periodo: 'Manhã',
-				escolaId: 123,
-				anoLetivo: 2025
+				periodo: 'Manhã'
 			};
 
-			const result = await findOrCreateClass(classData, mockTransaction);
+			const result = normalizeClassData(classData);
 
-			expect(result.id).toBe(111);
-			expect(result.isNew).toBe(false);
+			expect(result.turma).toBe('Turma A');
+			expect(result.periodo).toBe('Manhã');
 		});
 
-		it('should create new class when not found', async () => {
-			const mockTransaction = vi.fn();
-			mockTransaction
-				.mockResolvedValueOnce([]) // Class not found
-				.mockResolvedValueOnce([{ id: 222 }]); // New class created
-
+		it('should normalize periodo variations', () => {
 			const classData = {
-				turma: 'Nova Turma',
-				periodo: 'Tarde',
-				escolaId: 456,
-				anoLetivo: 2025
+				turma: 'Turma B',
+				periodo: 'manha'
 			};
 
-			const result = await findOrCreateClass(classData, mockTransaction);
+			const result = normalizeClassData(classData);
 
-			expect(result.id).toBe(222);
-			expect(result.isNew).toBe(true);
+			expect(result.periodo).toBe('Manhã');
 		});
 
-		it('should throw error for invalid periodo', async () => {
+		it('should throw error for invalid periodo', () => {
 			const classData = {
 				turma: 'Turma A',
-				periodo: 'Invalido',
-				escolaId: 123,
-				anoLetivo: 2025
+				periodo: 'Invalido'
 			};
 
-			await expect(findOrCreateClass(classData)).rejects.toThrow('Período inválido: Invalido');
+			expect(() => normalizeClassData(classData)).toThrow('Período inválido: Invalido');
 		});
 
-		it('should throw error for incomplete data', async () => {
+		it('should throw error for incomplete data', () => {
 			const classData: any = {
 				turma: 'Turma A'
 			};
 
-			await expect(findOrCreateClass(classData)).rejects.toThrow('Dados da turma incompletos');
+			expect(() => normalizeClassData(classData)).toThrow('Dados da turma incompletos');
 		});
 	});
 
@@ -206,34 +200,42 @@ describe('Matricula Import Queries', () => {
 
 			const matriculaData = {
 				alunoId: 123,
-				turmaId: 456,
+				escolaId: 456,
+				turma: 'Turma A',
+				periodo: 'Manhã',
 				anoLetivo: 2025
 			};
 
 			const result = await createMatricula(matriculaData, mockTransaction);
 
 			expect(result.id).toBe(333);
+			expect(result.isNew).toBe(true);
 		});
 
-		it('should return existing matricula if found', async () => {
+		it('should update existing matricula if found', async () => {
 			const mockTransaction = vi.fn();
-			mockTransaction.mockResolvedValue([{ id: 444 }]); // Existing matricula found
+			mockTransaction
+				.mockResolvedValueOnce([{ id: 444 }]) // Existing matricula found
+				.mockResolvedValueOnce([{ id: 444 }]); // Update returns id
 
 			const matriculaData = {
 				alunoId: 123,
-				turmaId: 456,
+				escolaId: 456,
+				turma: 'Turma B',
+				periodo: 'Tarde',
 				anoLetivo: 2025
 			};
 
 			const result = await createMatricula(matriculaData, mockTransaction);
 
 			expect(result.id).toBe(444);
+			expect(result.isNew).toBe(false);
 		});
 	});
 
 	describe('getSchoolByINEP', () => {
 		it('should return school when found', async () => {
-			mockDb.sql.mockResolvedValue([{ inep: 12345, escola: 'Escola Teste' }]);
+			mockSql.mockResolvedValue([{ inep: 12345, escola: 'Escola Teste' }]);
 
 			const result = await getSchoolByINEP(12345);
 
@@ -241,7 +243,7 @@ describe('Matricula Import Queries', () => {
 		});
 
 		it('should return null when school not found', async () => {
-			mockDb.sql.mockResolvedValue([]);
+			mockSql.mockResolvedValue([]);
 
 			const result = await getSchoolByINEP(99999);
 
@@ -251,7 +253,7 @@ describe('Matricula Import Queries', () => {
 
 	describe('getAllSchools', () => {
 		it('should return list of schools', async () => {
-			mockDb.sql.mockResolvedValue([
+			mockSql.mockResolvedValue([
 				{ inep: 12345, escola: 'Escola A' },
 				{ inep: 67890, escola: 'Escola B' }
 			]);
@@ -265,7 +267,7 @@ describe('Matricula Import Queries', () => {
 
 	describe('getStudentById', () => {
 		it('should return student when found', async () => {
-			mockDb.sql.mockResolvedValue([{
+			mockSql.mockResolvedValue([{
 				id: 123,
 				cliente: 'João Silva',
 				data_nasc: new Date('2010-03-15'),
@@ -287,7 +289,7 @@ describe('Matricula Import Queries', () => {
 		});
 
 		it('should return null when student not found', async () => {
-			mockDb.sql.mockResolvedValue([]);
+			mockSql.mockResolvedValue([]);
 
 			const result = await getStudentById(999);
 

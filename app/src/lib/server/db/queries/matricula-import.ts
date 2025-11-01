@@ -143,15 +143,18 @@ async function generateNextINEP(transaction: any): Promise<number> {
 }
 
 /**
- * Find or create a class (turma) for a given school
+ * Normalize and validate class (turma) data
+ *
+ * NOTE: The matriculas table stores turma and periodo as VARCHAR fields directly,
+ * not as foreign keys to a separate turmas table. This function validates and
+ * normalizes the data before insertion.
  */
-export async function findOrCreateClass(
-	classData: Partial<ParsedMatriculaRow> & { escolaId: number; anoLetivo: number },
-	transaction: any = sql
-): Promise<{ id: number; isNew: boolean }> {
-	const { turma, periodo, escolaId, anoLetivo } = classData;
+export function normalizeClassData(
+	classData: Partial<ParsedMatriculaRow>
+): { turma: string; periodo: string } {
+	const { turma, periodo } = classData;
 
-	if (!turma || !periodo || !escolaId || !anoLetivo) {
+	if (!turma || !periodo) {
 		throw new Error('Dados da turma incompletos');
 	}
 
@@ -160,64 +163,59 @@ export async function findOrCreateClass(
 		throw new Error(`Período inválido: ${periodo}`);
 	}
 
-	// Try to find existing class
-	const existingClass = await transaction`
-		SELECT id FROM pse.turmas
-		WHERE escola_id = ${escolaId}
-			AND nome = ${turma.trim()}
-			AND periodo = ${normalizedPeriodo}
-			AND ano_letivo = ${anoLetivo}
-		LIMIT 1
-	`;
-
-	if (existingClass.length > 0) {
-		return { id: existingClass[0].id, isNew: false };
-	}
-
-	// Create new class
-	const newClass = await transaction`
-		INSERT INTO pse.turmas (escola_id, nome, periodo, ano_letivo)
-		VALUES (${escolaId}, ${turma.trim()}, ${normalizedPeriodo}, ${anoLetivo})
-		RETURNING id
-	`;
-
-	return { id: newClass[0].id, isNew: true };
+	return {
+		turma: turma.trim(),
+		periodo: normalizedPeriodo
+	};
 }
 
 /**
  * Create a matricula (enrollment) for a student
+ *
+ * NOTE: Schema uses VARCHAR fields for turma and periodo, not foreign keys
  */
 export async function createMatricula(
 	matriculaData: {
 		alunoId: number;
-		turmaId: number;
+		escolaId: number;
+		turma: string;
+		periodo: string;
 		anoLetivo: number;
 	},
 	transaction: any = sql
-): Promise<{ id: number }> {
-	const { alunoId, turmaId, anoLetivo } = matriculaData;
+): Promise<{ id: number; isNew: boolean }> {
+	const { alunoId, escolaId, turma, periodo, anoLetivo } = matriculaData;
 
-	// Check if matricula already exists
+	// Check if matricula already exists for this student in this year at this school
 	const existingMatricula = await transaction`
 		SELECT id FROM pse.matriculas
 		WHERE aluno_id = ${alunoId}
-			AND turma_id = ${turmaId}
+			AND escola_id = ${escolaId}
 			AND ano_letivo = ${anoLetivo}
 		LIMIT 1
 	`;
 
 	if (existingMatricula.length > 0) {
-		return { id: existingMatricula[0].id };
+		// Update existing matricula with new turma/periodo if different
+		const updated = await transaction`
+			UPDATE pse.matriculas
+			SET turma = ${turma},
+				periodo = ${periodo},
+				updated_at = NOW()
+			WHERE id = ${existingMatricula[0].id}
+			RETURNING id
+		`;
+		return { id: updated[0].id, isNew: false };
 	}
 
 	// Create new matricula
 	const newMatricula = await transaction`
-		INSERT INTO pse.matriculas (aluno_id, turma_id, ano_letivo)
-		VALUES (${alunoId}, ${turmaId}, ${anoLetivo})
+		INSERT INTO pse.matriculas (aluno_id, escola_id, turma, periodo, ano_letivo)
+		VALUES (${alunoId}, ${escolaId}, ${turma}, ${periodo}, ${anoLetivo})
 		RETURNING id
 	`;
 
-	return { id: newMatricula[0].id };
+	return { id: newMatricula[0].id, isNew: true };
 }
 
 /**

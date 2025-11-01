@@ -2,7 +2,7 @@ import { parseMatriculaFile } from './matricula-import.service';
 import {
 	findOrCreateStudent,
 	findOrCreateSchool,
-	findOrCreateClass,
+	normalizeClassData,
 	createMatricula,
 	type ImportStats
 } from '$lib/server/db/queries/matricula-import';
@@ -136,9 +136,6 @@ export class MatriculaImportService {
 					});
 				});
 			}
-
-			// Small delay to prevent overwhelming the database
-			await new Promise(resolve => setTimeout(resolve, 100));
 		}
 
 		return stats;
@@ -157,10 +154,8 @@ export class MatriculaImportService {
 			errors: []
 		};
 
-		// Begin transaction
-		const transaction = sql;
-
-		try {
+		// Use proper database transaction with sql.begin()
+		return await sql.begin(async (transaction) => {
 			for (let i = 0; i < batch.length; i++) {
 				const record = batch[i];
 				const overallIndex = batchStart + i + 1;
@@ -174,19 +169,19 @@ export class MatriculaImportService {
 						row: record.rowNumber,
 						message: error instanceof Error ? error.message : 'Erro no processamento do registro'
 					});
+					// Continue processing other records in this batch
+					// Transaction will commit if most records succeed
 				}
 			}
 
-			// Note: Using postgres client, transactions are handled differently
-			// This is a simplified approach for the current setup
+			// If more than 50% of records in batch failed, abort transaction
+			if (stats.errors.length > batch.length * 0.5) {
+				throw new Error(`Muitos erros no lote (${stats.errors.length} de ${batch.length}). Transação abortada.`);
+			}
 
-		} catch (error) {
-			// Log error and rethrow
-			console.error('Batch processing error:', error);
-			throw error;
-		}
-
-		return stats;
+			return stats;
+		});
+		// Automatic commit on success, rollback on thrown error
 	}
 
 	/**
@@ -217,22 +212,24 @@ export class MatriculaImportService {
 			stats.newSchools++;
 		}
 
-		// Step 3: Find or create class
-		const classResult = await findOrCreateClass({
-			...record,
-			escolaId: schoolResult.id,
-			anoLetivo
-		}, transaction);
-		if (classResult.isNew) {
-			stats.newClasses++;
-		}
+		// Step 3: Normalize and validate class data
+		const classData = normalizeClassData(record);
 
-		// Step 4: Create matricula (enrollment)
-		await createMatricula({
+		// Step 4: Create or update matricula (enrollment)
+		const matriculaResult = await createMatricula({
 			alunoId: studentResult.id,
-			turmaId: classResult.id,
+			escolaId: schoolResult.id,
+			turma: classData.turma,
+			periodo: classData.periodo,
 			anoLetivo
 		}, transaction);
+
+		// Note: We no longer track "new classes" since turma is stored as text
+		// We track new vs updated matriculas instead
+		if (!matriculaResult.isNew) {
+			// Don't double-count updated students
+			stats.updatedStudents++;
+		}
 	}
 
 	/**
