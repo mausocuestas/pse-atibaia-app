@@ -44,6 +44,11 @@
 			icon: LayoutDashboardIcon
 		},
 		{
+			title: 'Alunos',
+			url: '/gestor/alunos',
+			icon: UsersIcon
+		},
+		{
 			title: 'Relatórios',
 			url: '/gestor/relatorios',
 			icon: FileTextIcon
@@ -65,11 +70,6 @@
 			title: 'Escolas',
 			url: '#',
 			icon: SchoolIcon
-		},
-		{
-			title: 'Alunos',
-			url: '#',
-			icon: UsersIcon
 		},
 		{
 			title: 'Avaliadores',

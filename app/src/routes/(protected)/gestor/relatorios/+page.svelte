@@ -8,6 +8,7 @@
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 
 	let { data }: { data: PageData } = $props();
 
@@ -558,7 +559,22 @@
 						<Table.Body>
 							{#each data.results as student (student.aluno_id)}
 								<Table.Row>
-									<Table.Cell class="font-medium">{student.cliente}</Table.Cell>
+									<Table.Cell class="font-medium">
+										<div class="flex items-center gap-2">
+											{student.cliente}
+											<Button
+												variant="ghost"
+												size="sm"
+												class="h-6 w-6 p-0"
+												title="Ver histórico completo"
+												onclick={() => {
+													window.location.href = `/gestor/alunos/${student.aluno_id}`;
+												}}
+											>
+												<ExternalLinkIcon class="h-3 w-3" />
+											</Button>
+										</div>
+									</Table.Cell>
 									<Table.Cell>{formatDate(student.data_nasc)}</Table.Cell>
 									<Table.Cell>{student.sexo}</Table.Cell>
 									<Table.Cell class="max-w-[200px] truncate" title={student.escola_nome}>

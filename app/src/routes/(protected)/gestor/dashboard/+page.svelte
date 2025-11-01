@@ -3,10 +3,55 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import EChart from '$lib/components/charts/EChart.svelte';
 	import type { EChartsOption } from 'echarts';
+	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
+
+	// Year filter state
+	let selectedYear = $state(data.currentYear);
+	let isLoading = $state(false);
+
+	// Available years for dropdown
+	const yearOptions = $derived(
+		data.availableYears.map(year => ({
+			value: year.toString(),
+			label: year.toString()
+		}))
+	);
+
+	const yearTriggerContent = $derived(
+		yearOptions.find(option => option.value === selectedYear.toString())?.label || 'Selecione o ano'
+	);
+
+	// Handle year change
+	async function handleYearChange(newYear: string) {
+		if (newYear === selectedYear.toString()) return;
+
+		isLoading = true;
+		selectedYear = parseInt(newYear);
+
+		// Navigate to new URL with year parameter
+		await goto(`/gestor/dashboard?ano=${newYear}`, {
+			replaceState: true,
+			noScroll: true
+		});
+
+		isLoading = false;
+	}
+
+	// Sync year from URL on mount
+	onMount(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const urlYear = urlParams.get('ano');
+		if (urlYear && parseInt(urlYear) !== data.currentYear) {
+			selectedYear = parseInt(urlYear);
+		}
+	});
 
 	// ============================================================================
 	// Anthropometric Chart Configuration
@@ -228,10 +273,43 @@
 <div class="container mx-auto p-8">
 	<!-- Page Header -->
 	<div class="mb-8">
-		<h1 class="text-3xl font-bold text-gray-900">Dashboard do Gestor</h1>
-		<p class="mt-2 text-gray-600">
-			Visão geral das avaliações de saúde dos alunos - Ano {data.currentYear}
-		</p>
+		<div class="flex items-center justify-between">
+			<div>
+				<h1 class="text-3xl font-bold text-gray-900">Dashboard do Gestor</h1>
+				<p class="mt-2 text-gray-600">
+					Visão geral das avaliações de saúde dos alunos - Ano {data.currentYear}
+				</p>
+			</div>
+			<div class="flex items-center space-x-4">
+				<div class="space-y-2">
+					<Label for="year-filter">Ano de Referência</Label>
+					<Select.Root
+						type="single"
+						value={selectedYear.toString()}
+						onValueChange={handleYearChange}
+						disabled={isLoading}
+					>
+						<Select.Trigger id="year-filter" class="w-32">
+							{#if isLoading}
+								<div class="flex items-center space-x-2">
+									<Spinner class="h-4 w-4" />
+									<span>Carregando...</span>
+								</div>
+							{:else}
+								{yearTriggerContent}
+							{/if}
+						</Select.Trigger>
+						<Select.Content>
+							{#each yearOptions as year (year.value)}
+								<Select.Item value={year.value} label={year.label}>
+									{year.label}
+								</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<!-- Coverage Statistics Card -->
