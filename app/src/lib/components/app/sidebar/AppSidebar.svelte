@@ -16,6 +16,7 @@
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -99,6 +100,11 @@
 	];
 
 	const supportItems = [
+		{
+			title: 'Dados Públicos',
+			url: '/dados-publicos',
+			icon: ShieldCheckIcon
+		},
 		{
 			title: 'Documentos',
 			url: '#',
