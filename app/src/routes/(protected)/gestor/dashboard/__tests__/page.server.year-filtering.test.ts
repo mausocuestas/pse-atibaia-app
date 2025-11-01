@@ -1,3 +1,4 @@
+// @ts-nocheck - Test file with mocked modules
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { load } from '../+page.server';
 import { error } from '@sveltejs/kit';
