@@ -1,20 +1,28 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import type { StudentData } from '$lib/server/db/queries/classes';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { formatPeriod, formatDateOfBirthWithAge } from '$lib/utils/periods';
 	import { localEvaluationStore } from '$lib/stores/local-evaluation-store.svelte';
 	import { getEvaluationSyncStatus, getSyncStatusBadgeClass, type EvaluationSyncStatus } from '$lib/utils/sync-status';
 	import { performBackgroundSync } from '$lib/utils/background-sync';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { PlusIcon } from 'lucide-svelte';
+	import StudentSearchModal from '$lib/components/student-search-modal.svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	const escola = data.escola;
 	const periodo = data.periodo;
 	const turma = data.turma;
-	const students = data.students || [];
+	let students = $state<StudentData[]>(data.students || []);
+	const canAddStudents = data.canAddStudents || false;
+
+	// Modal state
+	let showSearchModal = $state(false);
 
 	// Sync status for each student
 	let syncStatuses = $state<Record<number, EvaluationSyncStatus>>({});
@@ -60,6 +68,30 @@
 
 		syncStatuses = statuses;
 	}
+
+	// Handle student enrollment
+	async function handleStudentEnrolled(event: CustomEvent) {
+		const { student } = event.detail;
+
+		// Add the new student to the local students array
+		const newStudent: StudentData = {
+			aluno_id: student.id,
+			nome: student.nomeCompleto,
+			data_nasc: new Date(student.dataNascimento),
+			idade: null, // Will be calculated if needed
+			has_visual_eval: false,
+			has_anthropometric_eval: false,
+			has_dental_eval: false
+		};
+
+		students = [...students, newStudent];
+
+		// Load sync status for the new student
+		const status = await getEvaluationSyncStatus(student.id, false);
+		syncStatuses[student.id] = status;
+
+		toast.success(`${student.nomeCompleto} foi adicionado à turma com sucesso!`);
+	}
 </script>
 
 <div class="flex flex-1 flex-col gap-6 p-4 md:p-6">
@@ -96,9 +128,23 @@
 
 	<!-- Students Section -->
 	<div class="space-y-4">
-		<h2 class="text-xl font-semibold text-gray-900">
-			Alunos ({students.length})
-		</h2>
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<h2 class="text-xl font-semibold text-gray-900">
+				Alunos ({students.length})
+			</h2>
+
+			{#if canAddStudents}
+				<Button
+					variant="outline"
+					size="sm"
+					class="w-full sm:w-auto"
+					onclick={() => showSearchModal = true}
+				>
+					<PlusIcon class="h-4 w-4 mr-2" />
+					Adicionar Aluno
+				</Button>
+			{/if}
+		</div>
 
 		{#if students.length === 0}
 			<div class="text-center py-12 bg-white rounded-lg shadow">
@@ -141,4 +187,15 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Student Search Modal -->
+	<StudentSearchModal
+		bind:open={showSearchModal}
+		escolaId={escola?.inep || 0}
+		turma={turma || ''}
+		periodo={periodo || ''}
+		anoLetivo={data.anoLetivo || 2025}
+		on:student-enrolled={handleStudentEnrolled}
+		on:close={() => showSearchModal = false}
+	/>
 </div>

@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { getStudentsByClass } from '$lib/server/db/queries/classes';
 import { sql } from '$lib/server/db';
 import { z } from 'zod';
+import { error } from '@sveltejs/kit';
 
 // Current school year - hardcoded for Story 2.2
 const CURRENT_YEAR = 2025;
@@ -22,11 +23,23 @@ interface SchoolInfo {
 	tipo: string | null;
 }
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	// Get authenticated session
+	const session = await locals.auth();
+
+	// Ensure user is authenticated
+	if (!session?.user) {
+		throw error(401, 'Não autorizado');
+	}
+
 	const escola_id = Number(params.inep);
 	// Normalize periodo to uppercase to match database values (MANHÃ, TARDE, etc.)
 	const periodo = params.periodo.toUpperCase();
 	const turma = params.turma;
+
+	// Check if user has evaluator or manager permissions
+	const userWithPermissions = session.user as any;
+	const canAddStudents = userWithPermissions.is_avaliador || userWithPermissions.is_gestor;
 
 	// Validate escola_id
 	if (!escola_id || isNaN(escola_id)) {
@@ -34,7 +47,9 @@ export const load: PageServerLoad = async ({ params }) => {
 			escola: null,
 			periodo: null,
 			turma: null,
-			students: []
+			students: [],
+			user: session.user,
+			canAddStudents
 		};
 	}
 
@@ -46,7 +61,9 @@ export const load: PageServerLoad = async ({ params }) => {
 			escola: null,
 			periodo: null,
 			turma: null,
-			students: []
+			students: [],
+			user: session.user,
+			canAddStudents
 		};
 	}
 
@@ -72,6 +89,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		periodo,
 		turma,
 		students,
-		anoLetivo: CURRENT_YEAR
+		anoLetivo: CURRENT_YEAR,
+		user: session.user,
+		canAddStudents
 	};
 };
