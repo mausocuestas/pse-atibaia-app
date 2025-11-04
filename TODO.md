@@ -13,3 +13,7 @@ Esta lista contém pequenas melhorias e otimizações sugeridas durante as revis
 - [ ] E2E tests for mobile touch interactions
 - [ ] Photo capture feature for dental conditions
 - [ ] Automated CPOD index calculation
+[ ] ALTA PRIORIDADE: Criar testes de integração com banco de dados real para a funcionalidade de busca.
+[ ] MÉDIA PRIORIDADE: Implementar rate limiting nos endpoints de API.
+[ ] MÉDIA PRIORIDADE: Refatorar a query de busca de alunos para evitar o padrão N+1.
+[ ] ALTA PRIORIDADE: Corrigir os 30 erros de TypeScript nos arquivos de teste da Estória 4.3 para garantir a cobertura da nova funcionalidade de cadastro.
