@@ -51,7 +51,7 @@
 		</h1>
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-4 text-sm text-gray-600">
-				<span>Nascimento: {formattedDOB}</span>
+				<span>Nasc: {formattedDOB}</span>
 				<span>Idade: {age} anos</span>
 			</div>
 			<div class="flex items-center gap-2">

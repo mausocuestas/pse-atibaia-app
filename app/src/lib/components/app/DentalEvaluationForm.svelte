@@ -14,7 +14,7 @@
 		classificacaoCompleta = $bindable(null),
 		receberATF = $bindable(false),
 		precisaART = $bindable(false),
-		qtdeDentesART = $bindable(0),
+		qtdeDentesART = $bindable(null),
 		hasEscovacao = $bindable(false),
 		observacoes = $bindable(''),
 		disabled = false
@@ -24,11 +24,14 @@
 		classificacaoCompleta?: string | null;
 		receberATF?: boolean;
 		precisaART?: boolean;
-		qtdeDentesART?: number;
+		qtdeDentesART?: number | null;
 		hasEscovacao?: boolean;
 		observacoes?: string;
 		disabled?: boolean;
 	} = $props();
+
+	// Validation errors
+	let validationErrors = $state<Record<string, string>>({});
 
 	// Reactive classification computation
 	$effect(() => {
@@ -36,6 +39,24 @@
 			classificacaoCompleta = risco + (complemento || '');
 		} else {
 			classificacaoCompleta = null;
+		}
+	});
+
+	// Reactive validation for complemento (required when risco is set)
+	$effect(() => {
+		if (risco !== null && complemento === null) {
+			validationErrors.complemento = 'Complemento obrigatório quando Risco selecionado';
+		} else {
+			delete validationErrors.complemento;
+		}
+	});
+
+	// Reactive validation for qtdeDentesART (required when precisaART is true)
+	$effect(() => {
+		if (precisaART && (qtdeDentesART === null || qtdeDentesART === 0)) {
+			validationErrors.qtdeDentesART = 'Quantidade obrigatória quando ART necessário';
+		} else {
+			delete validationErrors.qtdeDentesART;
 		}
 	});
 
@@ -64,7 +85,6 @@
 
 	<!-- Complemento Section -->
 	<div class="flex flex-col gap-3">
-		<Label class="text-base font-semibold">Complemento (Sinal)</Label>
 		<div class="grid grid-cols-2 gap-3">
 			{#each complementoOptions as option}
 				<Toggle
@@ -77,13 +97,16 @@
 						}
 					}}
 					size="lg"
-					class="h-14 text-xl font-bold data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+					class="h-14 text-xl font-bold data-[state=on]:bg-primary data-[state=on]:text-primary-foreground {validationErrors.complemento ? 'border-red-500 border-2' : ''}"
 					{disabled}
 				>
 					{option}
 				</Toggle>
 			{/each}
 		</div>
+		{#if validationErrors.complemento}
+			<p class="text-sm text-red-600">{validationErrors.complemento}</p>
+		{/if}
 		<Button
 			variant="ghost"
 			size="sm"
@@ -113,6 +136,12 @@
 			<Label for="atf-checkbox" class="text-base">ATF Realizado</Label>
 		</div>
 
+		<!-- Escovação Orientada Checkbox -->
+		<div class="flex items-center gap-3">
+			<Checkbox id="escovacao-checkbox" bind:checked={hasEscovacao} {disabled} />
+			<Label for="escovacao-checkbox" class="text-base">Escovação Orientada Realizada</Label>
+		</div>
+
 		<!-- ART Checkbox with Conditional Input -->
 		<div class="flex flex-col gap-3">
 			<div class="flex items-center gap-3">
@@ -126,21 +155,18 @@
 					<Input
 						id="qtde-dentes"
 						type="number"
-						min="0"
+						min="1"
 						max="32"
 						bind:value={qtdeDentesART}
 						{disabled}
 						placeholder="Ex: 2"
-						class="w-32"
+						class="w-32 {validationErrors.qtdeDentesART ? 'border-red-500' : ''}"
 					/>
+					{#if validationErrors.qtdeDentesART}
+						<p class="text-sm text-red-600">{validationErrors.qtdeDentesART}</p>
+					{/if}
 				</div>
 			{/if}
-		</div>
-
-		<!-- Escovação Orientada Checkbox -->
-		<div class="flex items-center gap-3">
-			<Checkbox id="escovacao-checkbox" bind:checked={hasEscovacao} {disabled} />
-			<Label for="escovacao-checkbox" class="text-base">Escovação Orientada Realizada</Label>
 		</div>
 	</div>
 

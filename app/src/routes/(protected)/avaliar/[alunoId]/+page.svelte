@@ -46,7 +46,7 @@
 		classificacaoCompleta: data.dental?.classificacao_completa ?? null,
 		receberATF: data.dental?.recebeu_atf ?? false,
 		precisaART: data.dental?.precisa_art ?? false,
-		qtdeDentesART: data.dental?.qtde_dentes_art ?? 0,
+		qtdeDentesART: data.dental?.qtde_dentes_art ?? null,
 		hasEscovacao: data.dental?.has_escovacao ?? false,
 		observacoes: data.dental?.observacoes ?? ''
 	});
@@ -144,7 +144,7 @@
 			dentalData.classificacaoCompleta = data.dental?.classificacao_completa ?? null;
 			dentalData.receberATF = data.dental?.recebeu_atf ?? false;
 			dentalData.precisaART = data.dental?.precisa_art ?? false;
-			dentalData.qtdeDentesART = data.dental?.qtde_dentes_art ?? 0;
+			dentalData.qtdeDentesART = data.dental?.qtde_dentes_art ?? null;
 			dentalData.hasEscovacao = data.dental?.has_escovacao ?? false;
 			dentalData.observacoes = data.dental?.observacoes ?? '';
 
@@ -172,7 +172,7 @@
 			dentalData.classificacaoCompleta = data.dental?.classificacao_completa ?? null;
 			dentalData.receberATF = data.dental?.recebeu_atf ?? false;
 			dentalData.precisaART = data.dental?.precisa_art ?? false;
-			dentalData.qtdeDentesART = data.dental?.qtde_dentes_art ?? 0;
+			dentalData.qtdeDentesART = data.dental?.qtde_dentes_art ?? null;
 			dentalData.hasEscovacao = data.dental?.has_escovacao ?? false;
 			dentalData.observacoes = data.dental?.observacoes ?? '';
 
@@ -236,7 +236,7 @@
 						classificacao_completa: dentalData.classificacaoCompleta,
 						recebeu_atf: dentalData.receberATF,
 						precisa_art: dentalData.precisaART,
-						qtde_dentes_art: dentalData.qtdeDentesART,
+						qtde_dentes_art: dentalData.qtdeDentesART ?? 0,
 						has_escovacao: dentalData.hasEscovacao,
 						observacoes: dentalData.observacoes
 					}
@@ -374,7 +374,11 @@
 				</Breadcrumb.Item>
 				<Breadcrumb.Separator />
 				<Breadcrumb.Item>
-					<Breadcrumb.Page>{data.enrollment.turma}</Breadcrumb.Page>
+					<Breadcrumb.Link
+						href={`/escolas/${data.enrollment.escola_id}/${encodeURIComponent(data.enrollment.periodo)}/${encodeURIComponent(data.enrollment.turma)}`}
+					>
+						{data.enrollment.turma}
+					</Breadcrumb.Link>
 				</Breadcrumb.Item>
 			</Breadcrumb.List>
 		</Breadcrumb.Root>

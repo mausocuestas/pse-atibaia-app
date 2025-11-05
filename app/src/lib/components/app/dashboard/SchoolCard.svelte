@@ -28,13 +28,10 @@
 	class="block transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg"
 >
 	<Card.Root class="h-full">
-		<Card.Header>
+		<Card.Header class="p-3">
 			<Card.Title class="text-lg">{school.escola}</Card.Title>
-			<Card.Description>
-				{school.bairro || 'Bairro não informado'}
-			</Card.Description>
 		</Card.Header>
-		<Card.Content class="space-y-4">
+		<Card.Content class="p-3 space-y-3">
 			<div class="text-sm text-muted-foreground">
 				<p class="font-semibold text-foreground text-base">{school.total_alunos} alunos</p>
 			</div>
@@ -44,7 +41,7 @@
 						<span>{school.alunos_avaliados} alunos avaliados</span>
 						<span class="font-medium">{progressPercentage}%</span>
 					</div>
-					<Progress value={progressPercentage} max={100} class="w-full" />
+					<Progress value={progressPercentage} max={100} class="w-full [&>div]:bg-primary" />
 				</div>
 			{:else}
 				<div class="text-sm text-muted-foreground">

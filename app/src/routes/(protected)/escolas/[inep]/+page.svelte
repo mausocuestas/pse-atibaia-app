@@ -27,16 +27,9 @@
 
 	<!-- School Header -->
 	<div>
-		<h1 class="text-2xl font-bold text-gray-900 mb-1">
+		<h1 class="text-2xl font-bold text-gray-900">
 			{escola?.escola || 'Escola não encontrada'}
 		</h1>
-		{#if escola?.bairro || escola?.tipo}
-			<p class="text-gray-600">
-				{#if escola.tipo}{escola.tipo}{/if}
-				{#if escola.bairro && escola.tipo} • {/if}
-				{#if escola.bairro}{escola.bairro}{/if}
-			</p>
-		{/if}
 	</div>
 
 	<!-- Periods Section -->
