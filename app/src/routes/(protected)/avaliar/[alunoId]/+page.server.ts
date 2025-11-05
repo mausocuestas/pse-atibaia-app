@@ -187,6 +187,28 @@ export const actions: Actions = {
 					: null;
 				const observacoesVisual = formData.get('observacoes_visual')?.toString() || null;
 
+				// Validate visual acuity values (must be between 0.0 and 1.0)
+				const visualAcuitySchema = z.object({
+					olho_direito: z.number().min(0).max(1.0).nullable(),
+					olho_esquerdo: z.number().min(0).max(1.0).nullable(),
+					olho_direito_reteste: z.number().min(0).max(1.0).nullable(),
+					olho_esquerdo_reteste: z.number().min(0).max(1.0).nullable()
+				});
+
+				const visualValidation = visualAcuitySchema.safeParse({
+					olho_direito: olhoDireito,
+					olho_esquerdo: olhoEsquerdo,
+					olho_direito_reteste: olhoDireitoReteste,
+					olho_esquerdo_reteste: olhoEsquerdoReteste
+				});
+
+				if (!visualValidation.success) {
+					console.error('Visual acuity validation failed:', visualValidation.error);
+					return fail(400, {
+						error: 'Valores de acuidade visual devem estar entre 0.0 e 1.0'
+					});
+				}
+
 				// Calculate tem_problema flags based on threshold (< 0.7 indicates potential issue)
 				// Use reteste value if present, otherwise use initial measurement
 				const temProblemaOD =
@@ -231,11 +253,56 @@ export const actions: Actions = {
 				const classificacaoCompleta = formData.get('classificacao_completa')?.toString() || null;
 				const receberATF = formData.get('recebeu_atf') === 'true';
 				const precisaART = formData.get('precisa_art') === 'true';
-				const qtdeDentesART = formData.get('qtde_dentes_art')
-					? Number(formData.get('qtde_dentes_art'))
-					: 0;
+				const qtdeDentesARTRaw = formData.get('qtde_dentes_art')?.toString();
+				const qtdeDentesART = qtdeDentesARTRaw && qtdeDentesARTRaw !== ''
+					? Number(qtdeDentesARTRaw)
+					: null;
 				const hasEscovacao = formData.get('has_escovacao') === 'true';
 				const observacoesDental = formData.get('observacoes_dental')?.toString() || null;
+
+				// Validate dental data with Zod
+				const dentalSchema = z.object({
+					risco: z.string(),
+					complemento: z.string().nullable(),
+					precisaART: z.boolean(),
+					qtdeDentesART: z.number().nullable()
+				}).refine(
+					(data) => {
+						// Rule 1: If risco is selected, complemento is required
+						if (data.risco && !data.complemento) {
+							return false;
+						}
+						return true;
+					},
+					{
+						message: 'Complemento é obrigatório quando Risco é selecionado',
+						path: ['complemento']
+					}
+				).refine(
+					(data) => {
+						// Rule 2: If precisaART is true, qtdeDentesART must be provided and > 0
+						if (data.precisaART && (data.qtdeDentesART === null || data.qtdeDentesART === 0)) {
+							return false;
+						}
+						return true;
+					},
+					{
+						message: 'Quantidade de dentes é obrigatória quando ART é necessário',
+						path: ['qtdeDentesART']
+					}
+				);
+
+				const validationResult = dentalSchema.safeParse({
+					risco,
+					complemento,
+					precisaART,
+					qtdeDentesART
+				});
+
+				if (!validationResult.success) {
+					const firstError = validationResult.error.errors[0];
+					return fail(400, { error: firstError.message });
+				}
 
 				if (risco) {
 					const dentalResult = await saveDentalEvaluation({
@@ -249,7 +316,7 @@ export const actions: Actions = {
 						classificacao_completa: classificacaoCompleta,
 						recebeu_atf: receberATF,
 						precisa_art: precisaART,
-						qtde_dentes_art: precisaART ? qtdeDentesART : 0, // Force 0 if ART not needed
+						qtde_dentes_art: precisaART && qtdeDentesART ? qtdeDentesART : 0, // Use actual value if ART needed, else 0
 						has_escovacao: hasEscovacao,
 						observacoes: observacoesDental
 					});

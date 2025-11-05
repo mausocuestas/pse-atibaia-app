@@ -4,7 +4,8 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { Info } from '@lucide/svelte';
+	import * as Collapsible from '$lib/components/ui/collapsible';
+	import { ChevronDown, Info } from 'lucide-svelte';
 
 	// Props with $bindable for two-way binding
 	let {
@@ -27,6 +28,9 @@
 
 	// Validation errors
 	let errors = $state<Record<string, string>>({});
+
+	// Collapsible state for Reteste section
+	let isRestesteOpen = $state(false);
 
 	// Validate acuity value (0.0 to 1.0)
 	function validateAcuityValue(
@@ -112,7 +116,7 @@
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
 					<span class="w-3 h-3 rounded-full bg-red-500" title="Olho Direito"></span>
-					<Label for="olho-direito" class="text-sm">Olho Direito (OD)</Label>
+					<Label for="olho-direito" class="text-sm">Direito - OD</Label>
 				</div>
 				<Input
 					id="olho-direito"
@@ -136,7 +140,7 @@
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
 					<span class="w-3 h-3 rounded-full bg-blue-500" title="Olho Esquerdo"></span>
-					<Label for="olho-esquerdo" class="text-sm">Olho Esquerdo (OE)</Label>
+					<Label for="olho-esquerdo" class="text-sm">Esquerdo - OE</Label>
 				</div>
 				<Input
 					id="olho-esquerdo"
@@ -160,39 +164,49 @@
 
 	<Separator />
 
-	<!-- Reteste Section -->
-	<div class="flex flex-col gap-3">
-		<div class="flex items-start gap-2">
-			<h3 class="text-sm font-semibold text-gray-700">Reteste</h3>
-			<Tooltip.Provider>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<button
-								{...props}
-								type="button"
-								class="inline-flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors p-0.5"
-								aria-label="Informação sobre reteste"
-							>
-								<Info class="h-4 w-4 text-gray-500" />
-							</button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>
-						<p class="max-w-xs text-sm">
-							O valor do reteste, se preenchido, tem prioridade sobre as medições individuais dos
-							olhos.
-						</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
-			</Tooltip.Provider>
+	<!-- Reteste Section - Collapsible -->
+	<Collapsible.Root bind:open={isRestesteOpen}>
+		<div class="flex items-center justify-between">
+			<div class="flex items-start gap-2">
+				<h3 class="text-sm font-semibold text-gray-700">Reteste</h3>
+				<Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<button
+									{...props}
+									type="button"
+									class="inline-flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors p-0.5"
+									aria-label="Informação sobre reteste"
+								>
+									<Info class="h-4 w-4 text-gray-500" />
+								</button>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content>
+							<p class="max-w-xs text-sm">
+								O valor do reteste, se preenchido, tem prioridade sobre as medições individuais dos
+								olhos.
+							</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				</Tooltip.Provider>
+			</div>
+			<Collapsible.Trigger class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-11 w-11 p-0">
+				<ChevronDown
+					class="h-4 w-4 transition-transform duration-200 {isRestesteOpen ? 'rotate-180' : ''}"
+				/>
+				<span class="sr-only">Toggle Reteste</span>
+			</Collapsible.Trigger>
 		</div>
 
-		<p class="text-xs text-muted-foreground">
-			Os valores do reteste prevalecem sobre a medição inicial quando preenchidos.
-		</p>
+		<Collapsible.Content>
+			<div class="flex flex-col gap-3 mt-3">
+				<p class="text-xs text-muted-foreground">
+					Os valores do reteste prevalecem sobre a medição inicial quando preenchidos.
+				</p>
 
-		<div class="grid grid-cols-2 gap-4">
+				<div class="grid grid-cols-2 gap-4">
 			<!-- Olho Direito Reteste -->
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
@@ -240,8 +254,10 @@
 					<span class="text-xs text-blue-600">{errors['OE Reteste']}</span>
 				{/if}
 			</div>
-		</div>
-	</div>
+				</div>
+			</div>
+		</Collapsible.Content>
+	</Collapsible.Root>
 
 	<Separator />
 
